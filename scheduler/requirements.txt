@@ -1,0 +1,4 @@
+aio-pika
+apscheduler
+fastapi
+uvicorn[standard]

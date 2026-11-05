@@ -1,0 +1,21 @@
+http:
+  routers:
+    gateway-docs:
+      rule: "Path(`/docs`)"
+      entryPoints:
+        - web
+      priority: 1100
+      service: user-service@consulcatalog
+      middlewares:
+        - gateway-docs-path
+    traefik-dashboard:
+      rule: "PathPrefix(`/dashboard`) || PathPrefix(`/api/http`) || PathPrefix(`/api/overview`) || PathPrefix(`/api/version`)"
+      entryPoints:
+        - web
+      priority: 1000
+      service: api@internal
+
+  middlewares:
+    gateway-docs-path:
+      replacePath:
+        path: /docs

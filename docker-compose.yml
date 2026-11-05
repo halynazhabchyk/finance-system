@@ -1,0 +1,251 @@
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: finance-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--ping=true"
+      - "--entrypoints.web.address=:80"
+      - "--providers.consulcatalog=true"
+      - "--providers.consulcatalog.endpoint.address=consul:8500"
+      - "--providers.consulcatalog.prefix=traefik"
+      - "--providers.consulcatalog.exposedbydefault=false"
+      - "--providers.consulcatalog.refreshinterval=5s"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
+    ports:
+      - "${TRAEFIK_PORT:-8080}:80"
+    volumes:
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    depends_on:
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  consul:
+    image: hashicorp/consul:1.20
+    container_name: finance-consul
+    restart: unless-stopped
+    command: agent -server -bootstrap-expect=1 -ui -client=0.0.0.0
+    ports:
+      - "${CONSUL_PORT:-8500}:8500"
+    volumes:
+      - consul_data:/consul/data
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: finance-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-finance}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-finance}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:16
+    container_name: finance-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+      - user_service/.env
+      - budget_service/.env
+      - report_service/.env
+    environment:
+      POSTGRES_DB: postgres
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/01-create-service-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user_service/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - user_service/.env
+    environment:
+      USER_DB_HOST: postgres
+      POSTGRES_PORT: 5432
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      SERVICE_NAME: user-service
+      SERVICE_ID_PREFIX: ${USER_SERVICE_ID_PREFIX:-user-service}
+      SERVICE_PORT: 8001
+      SERVICE_HEALTH_PATH: /internal/health
+      CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
+      CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
+      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
+      PUBLIC_API_PREFIX: /api/users
+    expose:
+      - "8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/internal/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  budget-service:
+    build:
+      context: .
+      dockerfile: budget_service/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - budget_service/.env
+    environment:
+      BUDGET_DB_HOST: postgres
+      POSTGRES_PORT: 5432
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      CONSUL_ENABLED: ${CONSUL_ENABLED:-true}
+      SERVICE_NAME: budget-service
+      SERVICE_ID_PREFIX: ${BUDGET_SERVICE_ID_PREFIX:-budget-service}
+      SERVICE_PORT: 8002
+      SERVICE_HEALTH_PATH: /internal/health
+      CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
+      CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
+      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
+      PUBLIC_API_PREFIX: /api/budgets
+      USER_SERVICE_NAME: user-service
+      USER_SERVICE_REQUEST_TIMEOUT: ${USER_SERVICE_REQUEST_TIMEOUT:-5}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-finance}:${RABBITMQ_PASSWORD:-finance}@rabbitmq:5672/%2F
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-finance.events}
+    expose:
+      - "8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/internal/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  report-service:
+    build:
+      context: .
+      dockerfile: report_service/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - report_service/.env
+    environment:
+      REPORT_DB_HOST: postgres
+      POSTGRES_PORT: 5432
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      SERVICE_NAME: report-service
+      SERVICE_ID_PREFIX: ${REPORT_SERVICE_ID_PREFIX:-report-service}
+      SERVICE_PORT: 8003
+      SERVICE_HEALTH_PATH: /internal/health
+      CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
+      CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
+      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+      USER_SERVICE_NAME: user-service
+      USER_SERVICE_REQUEST_TIMEOUT: ${USER_SERVICE_REQUEST_TIMEOUT:-5}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-finance}:${RABBITMQ_PASSWORD:-finance}@rabbitmq:5672/%2F
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-finance.events}
+      RABBITMQ_MAX_DELIVERY_ATTEMPTS: ${RABBITMQ_MAX_DELIVERY_ATTEMPTS:-3}
+      RABBITMQ_RETRY_DELAY_SECONDS: ${RABBITMQ_RETRY_DELAY_SECONDS:-5}
+      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
+      PUBLIC_API_PREFIX: /api/reports
+    expose:
+      - "8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/internal/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  scheduler:
+    container_name: finance-scheduler
+    build:
+      context: .
+      dockerfile: scheduler/Dockerfile
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+    environment:
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      SERVICE_NAME: scheduler
+      SERVICE_ID_PREFIX: ${SCHEDULER_SERVICE_ID_PREFIX:-scheduler}
+      SERVICE_PORT: ${SCHEDULER_SERVICE_PORT:-8010}
+      HEALTH_BIND_HOST: 0.0.0.0
+      SERVICE_HEALTH_PATH: /internal/health
+      CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
+      CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
+      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-finance}:${RABBITMQ_PASSWORD:-finance}@rabbitmq:5672/%2F
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-finance.events}
+      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
+      RABBITMQ_PUBLISH_RETRIES: ${RABBITMQ_PUBLISH_RETRIES:-3}
+      RABBITMQ_RECONNECT_INTERVAL_SECONDS: ${RABBITMQ_RECONNECT_INTERVAL_SECONDS:-5}
+      CONSUL_REQUEST_TIMEOUT: ${CONSUL_REQUEST_TIMEOUT:-5}
+      SCHEDULER_DAILY_TIME: ${SCHEDULER_DAILY_TIME:-23:00}
+      SCHEDULER_MONTHLY_TIME: ${SCHEDULER_MONTHLY_TIME:-23:30}
+      SCHEDULER_TIMEZONE: ${SCHEDULER_TIMEZONE:-Europe/Kyiv}
+    expose:
+      - "${SCHEDULER_SERVICE_PORT:-8010}"
+    ports:
+      - "${SCHEDULER_PORT:-8010}:${SCHEDULER_SERVICE_PORT:-8010}"
+    depends_on:
+      consul:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import os, urllib.request; urllib.request.urlopen('http://localhost:' + os.environ['SERVICE_PORT'] + '/internal/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  consul_data:
+  postgres_data:
+  rabbitmq_data:
