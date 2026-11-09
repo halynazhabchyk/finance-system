@@ -18,9 +18,8 @@ consul_data/
 *.pem
 *.key
 *.crt
-.agents/
 project.md
-CLAUDE.md
+description.md
 
 # Word lock files
 ~$*
