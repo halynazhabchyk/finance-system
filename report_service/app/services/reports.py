@@ -1,9 +1,12 @@
+"""Use cases for monthly and annual reports (read side of the budget data)."""
+
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date
 from decimal import Decimal
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
+from shared.errors import BusinessRuleError, NotFoundError
 
 from app.repositories import reports as repository
 
@@ -19,10 +22,7 @@ def _category_reports(report, categories) -> list[dict]:
         Decimal("0.00"),
     )
     if category_total != total_expenses:
-        raise HTTPException(
-            status_code=422,
-            detail="Category expense totals do not match the report total.",
-        )
+        raise BusinessRuleError("Category expense totals do not match the report total.")
     result = []
     for category in categories:
         percentage = (
@@ -69,25 +69,14 @@ def _monthly_response(report, categories) -> dict:
     }
 
 
-def refresh_reports(db: Session, scope: str, requested_at: datetime) -> dict:
-    refreshed_at = requested_at.astimezone(timezone.utc)
-    refreshed_count = repository.refresh_reports(db, refreshed_at)
-    db.commit()
-    return {
-        "scope": scope,
-        "refreshed_reports": refreshed_count,
-        "refreshed_at": refreshed_at,
-    }
-
-
 def get_monthly_report(db: Session, user_id: uuid.UUID, year: int, month: int) -> dict:
     try:
         period_start = date(year, month, 1)
     except ValueError as error:
-        raise HTTPException(status_code=422, detail="month must be between 1 and 12") from error
+        raise BusinessRuleError("month must be between 1 and 12") from error
     report = repository.get_month(db, user_id, period_start)
     if report is None:
-        raise HTTPException(status_code=404, detail="Monthly report is not available yet.")
+        raise NotFoundError("Monthly report is not available yet.")
     return _monthly_response(
         report,
         repository.get_categories(db, report.report_id),
@@ -97,13 +86,10 @@ def get_monthly_report(db: Session, user_id: uuid.UUID, year: int, month: int) -
 def get_annual_report(db: Session, user_id: uuid.UUID, year: int) -> dict:
     months = repository.get_months(db, user_id, year)
     if not months:
-        raise HTTPException(status_code=404, detail="Annual report is not available yet.")
+        raise NotFoundError("Annual report is not available yet.")
     currencies = {month.currency for month in months}
     if len(currencies) != 1:
-        raise HTTPException(
-            status_code=422,
-            detail="Reports for one year must use a single currency.",
-        )
+        raise BusinessRuleError("Reports for one year must use a single currency.")
     generated_at = max(month.refreshed_at for month in months)
     total_budget = sum((month.total_budget for month in months), Decimal("0.00"))
     total_expenses = sum((month.total_expenses for month in months), Decimal("0.00"))
@@ -119,5 +105,8 @@ def get_annual_report(db: Session, user_id: uuid.UUID, year: int) -> dict:
         "remaining_amount": remaining,
         "currency": months[0].currency,
         "generated_at": generated_at,
-        "months": [_monthly_response(month, repository.get_categories(db, month.report_id)) for month in months],
+        "months": [
+            _monthly_response(month, repository.get_categories(db, month.report_id))
+            for month in months
+        ],
     }

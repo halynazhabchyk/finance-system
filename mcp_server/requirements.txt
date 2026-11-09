@@ -1,0 +1,7 @@
+mcp==2.3.0
+uvicorn[standard]
+httpx
+PyJWT
+pydantic
+pytest
+nh3==0.3.7

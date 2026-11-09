@@ -18,6 +18,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
+
+EXPENSE_PENDING = "PENDING"
+EXPENSE_CONFIRMED = "CONFIRMED"
+EXPENSE_CANCELLED = "CANCELLED"
 if TYPE_CHECKING:
     from app.models.budget import Budget
     from app.models.category import Category
@@ -30,6 +34,10 @@ class Expense(Base):
         CheckConstraint(
             "amount > 0",
             name="ck_expenses_amount_positive",
+        ),
+        CheckConstraint(
+            "saga_status IN ('PENDING', 'CONFIRMED', 'CANCELLED')",
+            name="ck_expenses_saga_status",
         ),
         ForeignKeyConstraint(
             ["budget_id", "category_id"],
@@ -71,6 +79,15 @@ class Expense(Base):
     description: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
+    )
+
+    # SAGA lifecycle: PENDING until Report Service confirms, CANCELLED after
+    # compensation (DLQ or timeout). Cancelled rows are kept as history.
+    saga_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=EXPENSE_PENDING,
+        server_default=EXPENSE_CONFIRMED,
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 
 from app.db.session import Base, get_database_url
-from app.models import Budget, Category, Expense  # noqa: F401
+from app.models import Budget, Category, Expense, OutboxEvent, SagaInstance  # noqa: F401
 
 
 config = context.config

@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Integer,
     Numeric,
     String,
     UniqueConstraint,
@@ -66,6 +67,13 @@ class MonthlyReport(Base):
     total_expenses: Mapped[Decimal] = mapped_column(
         Numeric(14, 2),
         nullable=False,
+    )
+
+    source_aggregate_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
     )
 
     remaining_amount: Mapped[Decimal] = mapped_column(

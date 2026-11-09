@@ -16,6 +16,7 @@ def build_report_update_event(
     return new_event(
         event_type,
         {
+            "scope": "daily" if event_type == "DailyReportUpdateRequested" else "monthly",
             "period_start": period_start.isoformat(),
             "period_end": period_end.isoformat(),
         },

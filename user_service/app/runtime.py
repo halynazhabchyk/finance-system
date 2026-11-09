@@ -15,6 +15,7 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 from app.api.routers import auth, system, users
+from shared.web.errors import register_domain_error_handler
 from shared.web.openapi import install_public_openapi
 from shared.service_discovery.consul import ServiceConfig, service_registration
 
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    register_domain_error_handler(app)
     app.include_router(system.router)
     app.include_router(users.router)
     app.include_router(auth.router)

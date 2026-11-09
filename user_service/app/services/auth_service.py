@@ -1,47 +1,28 @@
-"""Authentication business logic."""
+"""Authentication use cases: login and access-token validation."""
 
 import uuid
 
-from fastapi import HTTPException, status
+from jwt import InvalidTokenError
 from sqlalchemy.orm import Session
 
-from app.core.security import create_access_token, verify_password
+from shared.errors import AuthenticationError, PermissionDeniedError
+
+from app.core.security import create_access_token, decode_access_token, verify_password
 from app.repositories import users as user_repository
 from app.schemas.auth import TokenResponse
 
 
 def authenticate_user(db: Session, *, email: str, password: str) -> TokenResponse:
-    email = email.strip().lower()
-    user = user_repository.get_by_email(db, email)
+    user = user_repository.get_by_email(db, email.strip().lower())
     if user is None or not verify_password(password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthenticationError("Invalid email or password.")
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user account is inactive.",
-        )
-
-    return TokenResponse(
-        access_token=create_access_token(str(user.user_id)),
-    )
+        raise PermissionDeniedError("The user account is inactive.")
+    return TokenResponse(access_token=create_access_token(str(user.user_id)))
 
 
 def get_user_id_from_token(token: str) -> uuid.UUID:
-    from jwt import InvalidTokenError
-
-    from app.core.security import decode_access_token
-
     try:
-        payload = decode_access_token(token)
-        subject = payload.get("sub")
-        return uuid.UUID(subject)
+        return uuid.UUID(decode_access_token(token).get("sub"))
     except (InvalidTokenError, TypeError, ValueError, RuntimeError) as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from error
+        raise AuthenticationError("Invalid or expired access token.") from error
