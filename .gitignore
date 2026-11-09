@@ -20,3 +20,10 @@ consul_data/
 *.crt
 .agents/
 project.md
+CLAUDE.md
+
+# Word lock files
+~$*
+
+# Lab documentation (kept locally)
+docs/

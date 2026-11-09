@@ -1,61 +1,36 @@
-"""Shared Budget Service business helpers."""
+"""Business helpers shared by budget, category, expense and saga use cases."""
+
+from __future__ import annotations
 
 import calendar
 import uuid
+from datetime import date
 
-from fastapi import HTTPException
-from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from shared.errors import BusinessRuleError, NotFoundError
+from app.integrations.events import build_budget_snapshot_event
+from app.integrations.outbox import add_outbox_event
+from app.models import Budget
 from app.repositories import budgets as repository
-
-def commit(db: Session) -> None:
-    try:
-        db.flush()
-        db.commit()
-    except IntegrityError as error:
-        db.rollback()
-        constraint_name = getattr(getattr(error.orig, "diag", None), "constraint_name", "")
-        if constraint_name == "uq_budgets_user_period":
-            detail = "A budget already exists for this user and calendar month."
-        elif constraint_name == "uq_categories_budget_name":
-            detail = "A category with this name already exists in this budget."
-        elif constraint_name and constraint_name.startswith("uq_"):
-            detail = "The resource conflicts with existing data."
-        elif constraint_name and constraint_name.startswith("ck_"):
-            detail = "The submitted values violate a data rule."
-        elif constraint_name and constraint_name.startswith(("fk_", "expenses_")):
-            detail = "The submitted resource relationship is invalid."
-        else:
-            detail = "The submitted data conflicts with a database rule."
-        status_code = 409 if constraint_name and constraint_name.startswith("uq_") else 422
-        raise HTTPException(status_code=status_code, detail=detail) from error
-    except OperationalError as error:
-        db.rollback()
-        raise HTTPException(
-            status_code=503,
-            detail="The database is temporarily unavailable.",
-        ) from error
-    except SQLAlchemyError as error:
-        db.rollback()
-        raise HTTPException(
-            status_code=503,
-            detail="The database operation could not be completed.",
-        ) from error
 
 
 def budget_or_404(
     db: Session,
     budget_id: uuid.UUID,
     user_id: uuid.UUID,
-):
-    budget = repository.get_budget(db, budget_id)
+    *,
+    for_update: bool = False,
+) -> Budget:
+    """Return the user's own budget; another user's budget looks like a missing one."""
+    budget = repository.get_budget(db, budget_id, for_update=for_update)
     if budget is None or budget.user_id != user_id:
-        raise HTTPException(status_code=404, detail="Budget was not found.")
+        raise NotFoundError("Budget was not found.")
     return budget
 
 
-def validate_period(period_start, period_end) -> None:
+def validate_period(period_start: date, period_end: date) -> None:
+    """A budget always covers exactly one calendar month."""
     last_day = calendar.monthrange(period_start.year, period_start.month)[1]
     if (
         period_start.day != 1
@@ -63,7 +38,23 @@ def validate_period(period_start, period_end) -> None:
         or period_end.month != period_start.month
         or period_end.day != last_day
     ):
-        raise HTTPException(
-            status_code=422,
-            detail="A budget period must cover one complete calendar month.",
-        )
+        raise BusinessRuleError("A budget period must cover one complete calendar month.")
+
+
+def record_budget_change(
+    db: Session,
+    budget: Budget,
+    event_type: str,
+    *,
+    bump_version: bool = True,
+    **event_fields,
+) -> None:
+    """Stage the snapshot event for a change made in the caller's transaction.
+
+    The aggregate version grows with every change, so Report Service can
+    ignore snapshots that arrive out of order.
+    """
+    if bump_version:
+        budget.aggregate_version += 1
+    db.flush()
+    add_outbox_event(db, build_budget_snapshot_event(db, budget, event_type, **event_fields))

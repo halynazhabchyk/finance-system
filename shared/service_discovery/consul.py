@@ -216,6 +216,33 @@ def discover_service(
     return ConsulClient(config).discover(service_name)
 
 
+# ЛР №4: gateway routes of the MCP server and the A2A agents. They are not
+# "/api/X -> /internal/X" mappings: the MCP endpoint keeps its path, the agents'
+# prefix is stripped so the Agent Card is served at /.well-known/agent-card.json.
+AI_COMPONENT_ROUTES: dict[str, tuple[str, bool]] = {
+    "mcp-server": ("/mcp", False),
+    "budget-agent": ("/agents/budget", True),
+    "report-agent": ("/agents/report", True),
+}
+
+
+def _ai_component_tags(service_name: str, public_prefix: str, strip_prefix: bool) -> list[str]:
+    tags = [
+        "traefik.enable=true",
+        f"traefik.http.routers.{service_name}.rule=PathPrefix(`{public_prefix}`)",
+        f"traefik.http.routers.{service_name}.entrypoints=web",
+        f"traefik.http.routers.{service_name}.service={service_name}",
+    ]
+    if strip_prefix:
+        tags.extend(
+            [
+                f"traefik.http.routers.{service_name}.middlewares={service_name}-strip",
+                f"traefik.http.middlewares.{service_name}-strip.stripprefix.prefixes={public_prefix}",
+            ]
+        )
+    return tags
+
+
 def default_traefik_tags(service_name: str) -> list[str]:
     """Return Catalog Provider tags for the public API route of a service."""
     routes = {
@@ -231,7 +258,13 @@ def default_traefik_tags(service_name: str) -> list[str]:
             "/api/reports",
             "/internal/reports",
         ),
+        "ai-assistant": (
+            "/api/assistant",
+            "/internal/assistant",
+        ),
     }
+    if service_name in AI_COMPONENT_ROUTES:
+        return _ai_component_tags(service_name, *AI_COMPONENT_ROUTES[service_name])
     route = routes.get(service_name)
     if route is None:
         return []

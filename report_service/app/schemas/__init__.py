@@ -6,7 +6,6 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.refresh import RefreshRequest, RefreshResponse
 
 
 class CategoryReport(BaseModel):
@@ -53,6 +52,4 @@ __all__ = [
     "AnnualReportResponse",
     "CategoryReport",
     "MonthlyReportResponse",
-    "RefreshRequest",
-    "RefreshResponse",
 ]

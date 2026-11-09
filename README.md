@@ -35,56 +35,13 @@ Report Service  -> власна PostgreSQL база та read model
 
 Сервіси не звертаються напряму до баз даних один одного. Зовнішні HTTP-запити
 проходять через Traefik, а екземпляри сервісів реєструються в Consul.
-
-## Структура проєкту
-
-```text
-finance-system/
-├── user_service/              # User Service
-│   ├── app/
-│   │   ├── api/               # dependencies і HTTP routers
-│   │   ├── core/              # безпека
-│   │   ├── db/                # сесія PostgreSQL
-│   │   ├── models/            # SQLAlchemy-моделі UserAccount
-│   │   ├── repositories/      # доступ до даних
-│   │   ├── schemas/           # API-контракти
-│   │   └── services/          # бізнес-логіка
-│   ├── migrations/            # Alembic-міграції
-│   └── tests/                 # API-тести
-├── budget_service/            # Budget Service
-│   ├── app/
-│   │   ├── api/               # dependencies, routers, handlers
-│   │   ├── db/                # сесія PostgreSQL
-│   │   ├── integrations/      # публікація RabbitMQ-подій
-│   │   ├── models/            # Budget, Category, Expense
-│   │   ├── repositories/      # доступ до даних
-│   │   └── services/          # бюджетні правила і сценарії
-│   ├── migrations/
-│   └── tests/
-├── report_service/            # Report Service
-│   ├── app/
-│   │   ├── api/               # dependencies і routers
-│   │   ├── db/                # сесія PostgreSQL
-│   │   ├── models/            # read model і processed events
-│   │   ├── repositories/      # робота з read model
-│   │   ├── services/          # формування звітів
-│   │   └── workers/           # RabbitMQ consumer
-│   ├── migrations/
-│   └── tests/
-├── scheduler/                 # планувальник подій
-│   └── app/
-├── shared/                    # спільні контракти й інтеграції
-│   ├── clients/               # HTTP-клієнти сервісів
-│   ├── contracts/             # контракти подій
-│   ├── messaging/             # RabbitMQ transport
-│   ├── service_discovery/     # Consul integration
-│   └── web/                   # спільні OpenAPI helpers
-├── postgres/                  # створення окремих БД і ролей
-├── traefik/                   # динамічна конфігурація Gateway
-├── docker-compose.yml
-├── run_tests.ps1
-└── project.md
-```
+Budget Service записує події в таблицю `outbox_events` у тій самій транзакції,
+що й бізнес-зміну, а `OutboxPublisher` публікує їх у RabbitMQ: `BudgetCreated`,
+`BudgetUpdated` (зокрема зміни категорій), `BudgetDeleted`, `ExpenseCreated`,
+`ExpenseUpdated`, `ExpenseDeleted`, `ExpenseCancelled` (компенсація SAGA).
+Кожна подія містить snapshot бюджету та версію агрегату, тому Report Service
+ігнорує застарілі snapshots. Scheduler публікує `DailyReportUpdateRequested` або
+`MonthlyReportUpdateRequested` із конкретним періодом.
 
 ## Запуск локально
 
@@ -123,6 +80,10 @@ docker compose up --build
 /api/users/auth/*   -> User Service authentication
 /api/budgets/*      -> Budget Service
 /api/reports/*      -> Report Service
+/api/assistant/*    -> AI Assistant (ЛР №4)
+/mcp                -> MCP Server, Streamable HTTP (ЛР №4)
+/agents/budget/*    -> budget-agent, A2A (ЛР №4)
+/agents/report/*    -> report-agent, A2A (ЛР №4)
 ```
 
 Внутрішні маршрути сервісів доступні лише в Docker-мережі:
@@ -130,7 +91,8 @@ docker compose up --build
 ```text
 User Service:   /internal/auth, /internal/users, /internal/health
 Budget Service: /internal/budgets, /internal/health
-Report Service: /internal/reports, /internal/health
+Report Service: /internal/reports/monthly/{year}/{month},
+                /internal/reports/annual/{year}, /internal/health
 ```
 
 ### Міграції
@@ -171,3 +133,77 @@ Invoke-RestMethod "http://localhost:8500/v1/health/service/budget-service?passin
 Екземпляри реєструються в Consul з різними ідентифікаторами, а Traefik
 балансує запити між доступними екземплярами.
 
+## Transactional Outbox, Inbox і SAGA (ЛР №3)
+
+Розподілена операція «створення витрати» реалізована як SAGA-хореографія:
+
+```text
+T1  Budget Service : expense PENDING + saga_instances STARTED + outbox ExpenseCreated
+T2  Report Service : read model + processed_events (Inbox) -> ExpenseProcessed
+OK  Budget Service : saga COMPLETED, expense CONFIRMED
+CT1 Budget Service : expense CANCELLED + saga CANCELLED + outbox ExpenseCancelled
+CT2 Report Service : застосовує новіший snapshot ExpenseCancelled
+```
+
+Компенсацію запускають `SagaDlqConsumer` (повідомлення в DLQ) або
+`SagaTimeoutWatcher` (немає відповіді до `deadline_at`).
+
+| Черга | Exchange / routing key | Споживач |
+| --- | --- | --- |
+| `report-service-events` | `finance.events` / події Budget і Scheduler | Report Service |
+| `report-service-events.retry`, `.dlq` | `finance.events.retry`, `finance.events.dlx` / `#` | повтори та DLQ Report Service |
+| `budget-service-saga-events` | `finance.events` / `ExpenseProcessed` | `SagaReplyConsumer` |
+| `budget-service-saga-dlq` | `finance.events.dlx` / `ExpenseCreated` | `SagaDlqConsumer` |
+
+| Змінна | Сервіс | За замовчуванням |
+| --- | --- | --- |
+| `OUTBOX_POLL_INTERVAL` | Budget | `2` с |
+| `OUTBOX_SIMULATE_FAILURE` | Budget | `false` |
+| `SAGA_TIMEOUT_SECONDS` | Budget | `30` с |
+| `SAGA_WATCH_INTERVAL` | Budget | `5` с |
+| `RABBITMQ_MAX_DELIVERY_ATTEMPTS` | Report | `3` |
+| `RABBITMQ_RETRY_DELAY_SECONDS` | Budget, Report | `5` с |
+| `REPORT_SIMULATE_FAILURE` | Report | `false` |
+
+Увімкнення імітації збою консьюмера (PowerShell):
+
+```powershell
+$env:REPORT_SIMULATE_FAILURE = "true"
+docker compose up -d report-service
+```
+
+Стан SAGA витрати: `GET /api/budgets/{budget_id}/expenses/{expense_id}/saga`.
+
+## AI-агенти: function calling, MCP, A2A (ЛР №4)
+
+Компоненти звертаються до системи лише через Traefik із JWT користувача,
+власних БД не мають. Спільний код – `shared/ai_tools/`.
+
+| Компонент | Папка | Gateway |
+| --- | --- | --- |
+| AI Assistant | `ai_assistant/` | `POST /api/assistant/chat`, Swagger `/api/assistant/docs` |
+| MCP Server | `mcp_server/` | `/mcp` (Streamable HTTP); локально – stdio |
+| budget-agent | `budget_agent/` | `/agents/budget/.well-known/agent-card.json` |
+| report-agent | `report_agent/` | `/agents/report/.well-known/agent-card.json` |
+| Інтерактивний A2A-клієнт | `a2a_chat/` | консольна програма, не сервіс: чат з агентом природною мовою |
+
+Потрібна змінна в кореневому `.env`: `LLM_API_KEY` (ключ Google Gemini).
+Необов'язкові: `LLM_MODEL` (за замовчуванням `gemini-3.5-flash`) і `LLM_THINKING_LEVEL`.
+
+```powershell
+# JWT користувача
+$token = (Invoke-RestMethod -Method Post http://localhost:8080/api/users/auth/login `
+  -ContentType "application/x-www-form-urlencoded" -Body "username=<email>&password=<password>").access_token
+
+# Запит до асистента
+Invoke-RestMethod -Method Post http://localhost:8080/api/assistant/chat -Headers @{ Authorization = "Bearer $token" } `
+  -ContentType "application/json" -Body '{"message": "Скільки я ще можу витратити на розваги в листопаді 2026?"}'
+
+# MCP Inspector: stdio (з кореня проєкту) або HTTP http://localhost:8080/mcp
+$env:MCP_USER_JWT = $token; $env:GATEWAY_URL = "http://localhost:8080"
+npx @modelcontextprotocol/inspector .\.venv\Scripts\python.exe mcp_server\app\main.py
+
+# Чат з A2A-агентом природною мовою
+.\.venv\Scripts\python.exe -m a2a_chat                  # budget-agent (producer)
+.\.venv\Scripts\python.exe -m a2a_chat --agent report   # report-agent (consumer)
+```

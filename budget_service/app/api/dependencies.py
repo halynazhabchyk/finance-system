@@ -1,6 +1,7 @@
 from collections.abc import Generator
 import os
 from pathlib import Path
+from typing import Annotated
 import uuid
 
 from dotenv import load_dotenv
@@ -56,3 +57,8 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+# Shortcuts for route signatures.
+DatabaseSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[uuid.UUID, Depends(get_current_user)]

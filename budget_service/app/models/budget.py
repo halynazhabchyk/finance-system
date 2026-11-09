@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Integer,
     Numeric,
     String,
     UniqueConstraint,
@@ -66,6 +67,13 @@ class Budget(Base):
     total_amount: Mapped[Decimal] = mapped_column(
         Numeric(14, 2),
         nullable=False,
+    )
+
+    aggregate_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
     )
 
     currency: Mapped[str] = mapped_column(

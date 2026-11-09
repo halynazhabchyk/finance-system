@@ -72,6 +72,8 @@ services:
       - report_service/.env
     environment:
       POSTGRES_DB: postgres
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     expose:
       - "5432"
     volumes:
@@ -145,6 +147,11 @@ services:
       USER_SERVICE_REQUEST_TIMEOUT: ${USER_SERVICE_REQUEST_TIMEOUT:-5}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-finance}:${RABBITMQ_PASSWORD:-finance}@rabbitmq:5672/%2F
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-finance.events}
+      OUTBOX_POLL_INTERVAL: ${OUTBOX_POLL_INTERVAL:-2}
+      OUTBOX_SIMULATE_FAILURE: ${OUTBOX_SIMULATE_FAILURE:-false}
+      SAGA_TIMEOUT_SECONDS: ${SAGA_TIMEOUT_SECONDS:-30}
+      SAGA_WATCH_INTERVAL: ${SAGA_WATCH_INTERVAL:-5}
+      RABBITMQ_RETRY_DELAY_SECONDS: ${RABBITMQ_RETRY_DELAY_SECONDS:-5}
     expose:
       - "8002"
     depends_on:
@@ -185,6 +192,7 @@ services:
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-finance.events}
       RABBITMQ_MAX_DELIVERY_ATTEMPTS: ${RABBITMQ_MAX_DELIVERY_ATTEMPTS:-3}
       RABBITMQ_RETRY_DELAY_SECONDS: ${RABBITMQ_RETRY_DELAY_SECONDS:-5}
+      REPORT_SIMULATE_FAILURE: ${REPORT_SIMULATE_FAILURE:-false}
       PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
       PUBLIC_API_PREFIX: /api/reports
     expose:
@@ -244,6 +252,125 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  # --- ЛР №4: AI components. No databases, no RabbitMQ: only the REST API through Traefik. ---
+
+  ai-assistant:
+    build:
+      context: .
+      dockerfile: ai_assistant/Dockerfile
+    restart: unless-stopped
+    environment: &ai-common
+      GATEWAY_URL: http://traefik
+      GATEWAY_TIMEOUT_SECONDS: ${GATEWAY_TIMEOUT_SECONDS:-10}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gemini-3.5-flash}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0}
+      LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-1024}
+      LLM_REQUEST_TIMEOUT_SECONDS: ${LLM_REQUEST_TIMEOUT_SECONDS:-30}
+      LLM_THINKING_LEVEL: ${LLM_THINKING_LEVEL:-}
+      AGENT_MAX_TOOL_ITERATIONS: ${AGENT_MAX_TOOL_ITERATIONS:-6}
+      AGENT_MAX_TOKENS_PER_REQUEST: ${AGENT_MAX_TOKENS_PER_REQUEST:-20000}
+      TOOL_RESULT_MAX_CHARS: ${TOOL_RESULT_MAX_CHARS:-4000}
+      USER_MESSAGE_MAX_CHARS: ${USER_MESSAGE_MAX_CHARS:-2000}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
+      CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
+      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+      SERVICE_HEALTH_PATH: /internal/health
+      SERVICE_NAME: ai-assistant
+      SERVICE_ID_PREFIX: ${AI_ASSISTANT_ID_PREFIX:-ai-assistant}
+      SERVICE_PORT: 8020
+      PUBLIC_API_PREFIX: /api/assistant
+      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
+    expose:
+      - "8020"
+    depends_on: &ai-depends-on
+      consul:
+        condition: service_healthy
+      traefik:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      budget-service:
+        condition: service_healthy
+      report-service:
+        condition: service_healthy
+    healthcheck: &ai-healthcheck
+      test: ["CMD-SHELL", "python -c \"import os, urllib.request; urllib.request.urlopen('http://localhost:' + os.environ['SERVICE_PORT'] + '/internal/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: mcp_server/Dockerfile
+    restart: unless-stopped
+    environment:
+      GATEWAY_URL: http://traefik
+      GATEWAY_TIMEOUT_SECONDS: ${GATEWAY_TIMEOUT_SECONDS:-10}
+      TOOL_RESULT_MAX_CHARS: ${TOOL_RESULT_MAX_CHARS:-4000}
+      MCP_TRANSPORT: streamable-http
+      MCP_HTTP_PATH: /mcp
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-localhost:*,127.0.0.1:*,traefik,traefik:*}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-http://localhost:*,http://127.0.0.1:*}
+      CONSUL_HOST: consul
+      CONSUL_PORT: 8500
+      CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
+      CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
+      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+      SERVICE_HEALTH_PATH: /internal/health
+      SERVICE_NAME: mcp-server
+      SERVICE_ID_PREFIX: ${MCP_SERVER_ID_PREFIX:-mcp-server}
+      SERVICE_PORT: 8030
+    expose:
+      - "8030"
+    depends_on: *ai-depends-on
+    healthcheck: *ai-healthcheck
+
+  budget-agent:
+    build:
+      context: .
+      dockerfile: budget_agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *ai-common
+      SERVICE_NAME: budget-agent
+      SERVICE_ID_PREFIX: ${BUDGET_AGENT_ID_PREFIX:-budget-agent}
+      SERVICE_PORT: 8041
+      PUBLIC_API_PREFIX: ""
+      A2A_PUBLIC_URL: ${BUDGET_AGENT_PUBLIC_URL:-http://localhost:8080/agents/budget}
+      A2A_SAGA_WAIT_SECONDS: ${A2A_SAGA_WAIT_SECONDS:-45}
+      A2A_SAGA_POLL_INTERVAL_SECONDS: ${A2A_SAGA_POLL_INTERVAL_SECONDS:-1}
+    expose:
+      - "8041"
+    depends_on: *ai-depends-on
+    healthcheck: *ai-healthcheck
+
+  report-agent:
+    build:
+      context: .
+      dockerfile: report_agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: *ai-common
+      SERVICE_NAME: report-agent
+      SERVICE_ID_PREFIX: ${REPORT_AGENT_ID_PREFIX:-report-agent}
+      SERVICE_PORT: 8042
+      PUBLIC_API_PREFIX: ""
+      A2A_PUBLIC_URL: ${REPORT_AGENT_PUBLIC_URL:-http://localhost:8080/agents/report}
+      BUDGET_AGENT_URL: http://traefik/agents/budget
+      A2A_TIMEOUT_SECONDS: ${A2A_TIMEOUT_SECONDS:-90}
+    expose:
+      - "8042"
+    depends_on:
+      <<: *ai-depends-on
+      budget-agent:
+        condition: service_healthy
+    healthcheck: *ai-healthcheck
 
 volumes:
   consul_data:

@@ -4,7 +4,8 @@ from decimal import Decimal
 from types import SimpleNamespace
 
 import pytest
-from fastapi import HTTPException
+
+from shared.errors import BusinessRuleError, NotFoundError
 
 
 def report(user_id, month, expenses=Decimal("100.00")):
@@ -71,10 +72,8 @@ def test_category_totals_must_match_report_total(monkeypatch):
     monkeypatch.setattr(repository, "get_month", lambda db, uid, period: item)
     monkeypatch.setattr(repository, "get_categories", lambda db, report_id: [category("Food", "90")])
 
-    with pytest.raises(HTTPException) as error:
+    with pytest.raises(BusinessRuleError):
         get_monthly_report(object(), user_id, 2026, 1)
-
-    assert error.value.status_code == 422
 
 
 def test_annual_report_contains_monthly_statistics(monkeypatch):
@@ -109,7 +108,22 @@ def test_missing_annual_report_returns_404(monkeypatch):
 
     monkeypatch.setattr(repository, "get_months", lambda db, uid, year: [])
 
-    with pytest.raises(HTTPException) as error:
+    with pytest.raises(NotFoundError):
         get_annual_report(object(), uuid.uuid4(), 2026)
 
-    assert error.value.status_code == 404
+
+def test_missing_monthly_report_returns_404_over_http(client, monkeypatch):
+    from app.api.dependencies import get_current_user, get_db
+    from app.main import app
+    from app.repositories import reports as repository
+
+    monkeypatch.setattr(repository, "get_month", lambda db, uid, period: None)
+    app.dependency_overrides[get_current_user] = lambda: uuid.uuid4()
+    app.dependency_overrides[get_db] = lambda: iter([object()])
+    try:
+        response = client.get("/internal/reports/monthly/2026/1")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Monthly report is not available yet."}

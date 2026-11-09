@@ -1,0 +1,13 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY budget_agent/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY budget_agent/ .
+COPY shared/ ./shared/
+
+EXPOSE 8041
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8041"]
