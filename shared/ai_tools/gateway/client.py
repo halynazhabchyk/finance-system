@@ -123,4 +123,4 @@ class FinanceApiClient:
             body: Any = response.json()
         except ValueError:
             body = None
-        raise GatewayError.from_response(response.status_code, body)
+        raise GatewayError.from_response(response.status_code, body, response.headers.get("WWW-Authenticate"))

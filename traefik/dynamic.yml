@@ -34,3 +34,11 @@ http:
     gateway-docs-path:
       replacePath:
         path: /docs
+
+    # ЛР №5, п. 6.3: security headers on every response of the "web" entrypoint
+    # (attached in docker-compose.yml). No accessControl* here: CORS stays in the services.
+    security-headers:
+      headers:
+        contentTypeNosniff: true
+        frameDeny: true
+        referrerPolicy: "no-referrer"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 MAX_DETAIL_CHARS = 300
@@ -15,6 +16,13 @@ _MESSAGES: dict[int, str] = {
     409: "Conflict with the current state: {detail}.",
     422: "The service rejected the data: {detail}. Correct the arguments or ask the user.",
 }
+# ЛР №5, п. 4–5: a valid token without the needed OAuth scope (RFC 6750 "insufficient_scope").
+# Kept apart from the generic 403 so the model does not blame a blocked account or another user's data.
+_INSUFFICIENT_SCOPE = (
+    "Permission missing: the user's access token does not include the scope \"{scope}\" required for this "
+    "operation. Tell the user to sign in again and grant \"{scope}\" (Swagger: Authorize, tick the scope). Do not retry."
+)
+_SCOPE_IN_CHALLENGE = re.compile(r'error="insufficient_scope"(?:.*?scope="([^"]*)")?')
 _SERVER_ERROR = "The finance service is temporarily unavailable (HTTP {status}). Try again later."
 _TIMEOUT = "The finance service did not respond in time. Try again later."
 _NETWORK = "The finance service is unreachable. Try again later."
@@ -33,9 +41,13 @@ class GatewayError(Exception):
         self.llm_message = llm_message
 
     @classmethod
-    def from_response(cls, status_code: int, body: Any) -> GatewayError:
+    def from_response(cls, status_code: int, body: Any, www_authenticate: str | None = None) -> GatewayError:
         if status_code >= 500:
             return cls(status_code, _SERVER_ERROR.format(status=status_code))
+        if status_code == 403 and www_authenticate:
+            match = _SCOPE_IN_CHALLENGE.search(www_authenticate)
+            if match:
+                return InsufficientScope(match.group(1) or "unknown")
         template = _MESSAGES.get(status_code, "The request failed with HTTP {status}: {detail}.")
         return cls(status_code, template.format(status=status_code, detail=summarize_detail(body)))
 
@@ -46,6 +58,14 @@ class GatewayError(Exception):
     @classmethod
     def network(cls) -> GatewayError:
         return cls(None, _NETWORK)
+
+
+class InsufficientScope(GatewayError):
+    """403 with ``WWW-Authenticate: Bearer error="insufficient_scope"`` – the token lacks a scope."""
+
+    def __init__(self, scope: str) -> None:
+        super().__init__(403, _INSUFFICIENT_SCOPE.format(scope=scope))
+        self.scope = scope
 
 
 def summarize_detail(body: Any) -> str:

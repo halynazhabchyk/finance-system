@@ -23,7 +23,7 @@ oauth2_scheme = authorization_code_scheme(SERVICE_SCOPES, auto_error=False)
 verified_token = bearer_token_dependency(oauth2_scheme)
 
 
-def get_access_token(token: Annotated[VerifiedToken, Security(verified_token)]) -> str:
+def get_access_token(token: Annotated[VerifiedToken, Security(verified_token, scopes=["assistant:chat"])]) -> str:
     """The caller's token, verified here (aud = ai-assistant) and forwarded unchanged; never logged."""
     return token.raw
 

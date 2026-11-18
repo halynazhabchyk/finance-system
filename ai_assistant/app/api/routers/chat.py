@@ -14,7 +14,7 @@ router = APIRouter(prefix="/internal/assistant", tags=["assistant"])
     responses={
         400: {"description": "Rejected by a guardrail (e.g. prompt injection)."},
         401: {"description": "Missing, invalid or expired JWT."},
-        403: {"description": "The account is blocked."},
+        403: {"description": "The token lacks the assistant:chat scope, or the account is blocked."},
         422: {"description": "Empty or too long message."},
         503: {"description": "Language model or finance services unavailable."},
     },

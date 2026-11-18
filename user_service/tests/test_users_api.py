@@ -27,6 +27,9 @@ class FakeDb:
     def commit(self):
         self.commits += 1
 
+    def flush(self):
+        pass
+
     def rollback(self):
         pass
 
@@ -136,3 +139,29 @@ def test_password_registration_and_login_are_removed(api):
 
     assert registration.status_code == 405
     assert login.status_code == 404
+
+
+# --- ЛР №5, п. 4: OAuth scopes ----------------------------------------------------------------
+
+
+def test_reading_own_profile_needs_users_read(api):
+    sub = uuid.uuid4()
+
+    response = api.client.get(f"/internal/users/{sub}", headers={"Authorization": f"Bearer {make_token(sub, scopes=('budgets:read',))}"})
+
+    assert response.status_code == 403
+    assert response.headers["www-authenticate"] == 'Bearer error="insufficient_scope", scope="users:read"'
+    assert api.users == {}  # no profile is provisioned for a rejected token
+
+
+def test_renaming_needs_users_write(api):
+    sub = uuid.uuid4()
+    read_only = {"Authorization": f"Bearer {make_token(sub, scopes=('users:read',))}"}
+    writer = {"Authorization": f"Bearer {make_token(sub, scopes=('users:read', 'users:write'))}"}
+
+    denied = api.client.patch(f"/internal/users/{sub}/name", json={"user_name": "New Name"}, headers=read_only)
+    allowed = api.client.patch(f"/internal/users/{sub}/name", json={"user_name": "New Name"}, headers=writer)
+
+    assert denied.status_code == 403
+    assert 'scope="users:write"' in denied.headers["www-authenticate"]
+    assert allowed.status_code == 200, allowed.text

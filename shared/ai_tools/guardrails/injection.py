@@ -38,6 +38,11 @@ INJECTION_RULES: tuple[InjectionRule, ...] = (
         r"(ігноруй|проігноруй|ігнорувати|забудь|відкинь|не\s+зважай\s+на|обійди)\w*.{0,40}(попередн|всі|усі|свої|системн|наведен)\w*.{0,20}(інструкц|правил|вказівк|промпт)\w*",
     ),
     _rule(
+        "override_instructions_ru",
+        r"(игнорируй|проигнорируй|игнорировать|забудь|отбрось|не\s+обращай\s+внимания\s+на|обойди)\w*.{0,40}"
+        r"(предыдущ|все|свои|системн|приведенн)\w*.{0,20}(инструкц|правил|указани|промпт)\w*",
+    ),
+    _rule(
         "reveal_hidden_data",
         r"\b(reveal|show|print|display|repeat|output|leak|tell\s+me)\b.{0,40}\b(hidden\s+(instructions?|prompt|rules)|your\s+(instructions?|prompt|rules))\b",
     ),

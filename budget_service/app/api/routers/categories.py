@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Response, status
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from app.api.dependencies import BudgetWriter, DatabaseSession
 from app.schemas import CategoryCreate, CategoryResponse, CategoryUpdate
 from app.services import categories as category_service
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/internal/budgets/{budget_id}/categories", tags=["cat
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
     budget_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetWriter,
     payload: CategoryCreate,
     db: DatabaseSession,
 ):
@@ -25,7 +25,7 @@ def create_category(
 def update_category(
     budget_id: uuid.UUID,
     category_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetWriter,
     payload: CategoryUpdate,
     db: DatabaseSession,
 ):
@@ -36,7 +36,7 @@ def update_category(
 def delete_category(
     budget_id: uuid.UUID,
     category_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetWriter,
     db: DatabaseSession,
 ):
     category_service.delete_category(db, budget_id, category_id, current_user)

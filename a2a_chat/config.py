@@ -38,7 +38,6 @@ DEFAULT_TIMEOUT_SECONDS = 120.0
 class ChatSettings:
     gateway_url: str
     target: AgentTarget
-    email: str | None
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
 
     @property
@@ -46,6 +45,6 @@ class ChatSettings:
         return self.gateway_url + self.target.path
 
     @classmethod
-    def build(cls, agent: str, gateway_url: str | None, email: str | None) -> ChatSettings:
+    def build(cls, agent: str, gateway_url: str | None) -> ChatSettings:
         url = (gateway_url or os.getenv("GATEWAY_URL") or DEFAULT_GATEWAY_URL).rstrip("/")
-        return cls(gateway_url=url, target=AGENTS[agent], email=email)
+        return cls(gateway_url=url, target=AGENTS[agent])

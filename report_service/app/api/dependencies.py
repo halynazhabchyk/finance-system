@@ -38,3 +38,5 @@ def get_current_user(token: Annotated[VerifiedToken, Security(verified_token)]) 
 # Shortcuts for route signatures.
 DatabaseSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[uuid.UUID, Depends(get_current_user)]
+# ЛР №5, п. 4: the scope is checked locally before User Service is asked (403 insufficient_scope).
+ReportReader = Annotated[uuid.UUID, Security(get_current_user, scopes=["reports:read"])]

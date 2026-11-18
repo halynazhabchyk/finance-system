@@ -172,3 +172,20 @@ def test_keycloak_token_is_forwarded_to_the_services_unchanged(assistant):
 
     assert response.status_code == 200
     assert {request.headers["authorization"] for request in api.requests} == {f"Bearer {api.token}"}
+
+
+def test_chat_without_assistant_chat_scope_is_403_and_model_is_not_called(assistant):
+    """ЛР №5, п. 4: the assistant needs its own scope; nothing is forwarded without it."""
+    from shared.security.testing import make_token
+
+    api = FakeFinanceApi()
+    llm = ScriptedLLMClient([final_answer("never")])
+    client = assistant(api, llm)
+    token = make_token(api.user_id, scopes=("users:read", "budgets:read", "reports:read"))
+
+    response = client.post("/internal/assistant/chat", json={"message": "Привіт"}, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 403
+    assert response.headers["www-authenticate"] == 'Bearer error="insufficient_scope", scope="assistant:chat"'
+    assert llm.requests == []
+    assert api.paths() == []

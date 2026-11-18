@@ -28,7 +28,7 @@ def test_agent_card_is_public_and_describes_the_agent(http):
     assert card["securitySchemes"]["bearerAuth"]["httpAuthSecurityScheme"] == {
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "Access token of User Service (POST /api/users/auth/login).",
+        "description": "Keycloak access token (OAuth 2.0 Authorization Code + PKCE, realm finance); forwarded unchanged to the services.",
     }
 
 

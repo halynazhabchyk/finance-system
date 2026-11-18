@@ -1,63 +1,71 @@
-"""Login through User Service (the same JWT every component uses).
+"""Access token of the user for the A2A chat (ЛР №5: Keycloak, no password login any more).
 
-The password is sent only to User Service and is never printed or logged;
-the token lives only in the memory of the running client.
+The token is obtained by signing in through Swagger UI (Authorization Code + PKCE)
+and is given to the client in ``A2A_ACCESS_TOKEN`` or typed in a hidden prompt.
+It lives only in the memory of the running client and is never printed or logged.
+
+The claims are read here without verifying the signature, only to show who is
+signed in and to report an expired token early; the agents and the services
+verify the token themselves.
 """
 
 from __future__ import annotations
 
-import httpx
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
 
-LOGIN_PATH = "/api/users/auth/login"
+import jwt
 
-# User Service maps AuthenticationError -> 401 and PermissionDeniedError -> 403 (shared/web/errors.py).
-_STATUS_MESSAGES: dict[int, str] = {
-    401: "Невірний email або пароль.",
-    403: "Обліковий запис заблоковано.",
-    404: "Gateway не знайшов маршрут входу: User Service ще не зареєстрований у Consul. Зачекайте й повторіть.",
-    422: "Вкажіть email і пароль.",
-}
-
-
-class LoginFailed(Exception):
-    """The user could not log in; the message is safe to show to the user."""
+TOKEN_ENV = "A2A_ACCESS_TOKEN"
+HOW_TO_GET = (
+    "Отримайте новий токен: Swagger UI (http://localhost:8080/api/budgets/docs) → Authorize → "
+    "вхід через Keycloak; скопіюйте Bearer-токен із запиту (Copy as curl / DevTools → Network)."
+)
+REJECTED = "Токен недійсний або прострочений. " + HOW_TO_GET
 
 
-async def login(
-    gateway_url: str,
-    email: str,
-    password: str,
-    *,
-    timeout_seconds: float = 10.0,
-    transport: httpx.AsyncBaseTransport | None = None,
-) -> str:
-    """Return the access token of the user.
+class TokenProblem(Exception):
+    """The token cannot be used; the message is safe to show to the user."""
 
-    Raises ``LoginFailed`` with a user-facing message for empty credentials, wrong
-    credentials, a blocked account, an unreachable gateway or an unexpected reply.
-    """
-    if not email.strip() or not password:
-        raise LoginFailed(_STATUS_MESSAGES[422])
 
-    try:
-        async with httpx.AsyncClient(base_url=gateway_url, timeout=timeout_seconds, transport=transport) as http:
-            response = await http.post(LOGIN_PATH, data={"username": email.strip(), "password": password})
-    except httpx.TimeoutException as error:
-        raise LoginFailed(f"Gateway {gateway_url} не відповів за {timeout_seconds:.0f} с.") from error
-    except httpx.HTTPError as error:
-        raise LoginFailed(f"Gateway {gateway_url} недоступний ({type(error).__name__}). Чи запущено docker compose?") from error
+@dataclass(frozen=True)
+class TokenInfo:
+    subject: str
+    expires_at: int
+    scopes: frozenset[str]
+    username: str | None = None
 
-    if response.status_code in _STATUS_MESSAGES:
-        raise LoginFailed(_STATUS_MESSAGES[response.status_code])
-    if response.status_code >= 500:
-        raise LoginFailed(f"User Service тимчасово недоступний (HTTP {response.status_code}). Спробуйте пізніше.")
-    if response.status_code != 200:
-        raise LoginFailed(f"User Service відповів HTTP {response.status_code}.")
+    def minutes_left(self, now: float | None = None) -> int:
+        return max(0, int((self.expires_at - (now if now is not None else time.time())) // 60))
 
-    try:
-        token = response.json().get("access_token")
-    except (ValueError, AttributeError) as error:
-        raise LoginFailed("User Service повернув відповідь не у форматі JSON.") from error
-    if not isinstance(token, str) or not token:
-        raise LoginFailed("User Service не повернув access_token.")
+
+def read_token(env_value: str | None, read_secret: Callable[[str], str]) -> str:
+    """Token from the environment variable, otherwise from a hidden prompt."""
+    token = (env_value or "").strip() or read_secret("Access token (Keycloak): ").strip()
+    if token.lower().startswith("bearer "):
+        token = token[len("bearer ") :].strip()
+    if not token:
+        raise TokenProblem(f"Токен не вказано. Задайте {TOKEN_ENV} або вставте токен. " + HOW_TO_GET)
     return token
+
+
+def inspect_token(token: str, *, now: float | None = None) -> TokenInfo:
+    """Claims for display; a malformed or expired token is reported before any request."""
+    try:
+        claims = jwt.decode(token, options={"verify_signature": False})
+    except jwt.InvalidTokenError as error:
+        raise TokenProblem("Це не JWT access token. " + HOW_TO_GET) from error
+
+    subject, expires_at = claims.get("sub"), claims.get("exp")
+    if not isinstance(subject, str) or not isinstance(expires_at, (int, float)):
+        raise TokenProblem("У токені немає sub або exp. " + HOW_TO_GET)
+    if expires_at <= (now if now is not None else time.time()):
+        raise TokenProblem("Строк дії токена минув (15 хв). " + HOW_TO_GET)
+    scope = claims.get("scope")
+    return TokenInfo(
+        subject=subject,
+        expires_at=int(expires_at),
+        scopes=frozenset(scope.split()) if isinstance(scope, str) else frozenset(),
+        username=claims.get("preferred_username") or claims.get("email"),
+    )

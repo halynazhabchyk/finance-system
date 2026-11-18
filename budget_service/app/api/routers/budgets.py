@@ -5,7 +5,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, Response, status
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from app.api.dependencies import BudgetReader, BudgetWriter, DatabaseSession
 from app.schemas import BudgetCreate, BudgetResponse, BudgetSummary, BudgetUpdate
 from app.services import budgets as budget_service
 
@@ -16,7 +16,7 @@ BUDGET_PERIOD_PATTERN = r"^\d{4}-(0[1-9]|1[0-2])$"
 
 @router.get("", response_model=list[BudgetResponse])
 def list_budgets(
-    current_user: CurrentUser,
+    current_user: BudgetReader,
     db: DatabaseSession,
     period: Annotated[
         str | None,
@@ -31,19 +31,19 @@ def list_budgets(
 
 
 @router.post("", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
-def create_budget(current_user: CurrentUser, payload: BudgetCreate, db: DatabaseSession):
+def create_budget(current_user: BudgetWriter, payload: BudgetCreate, db: DatabaseSession):
     return budget_service.create_budget(db, current_user, payload)
 
 
 @router.get("/{budget_id}", response_model=BudgetSummary)
-def get_budget(budget_id: uuid.UUID, current_user: CurrentUser, db: DatabaseSession):
+def get_budget(budget_id: uuid.UUID, current_user: BudgetReader, db: DatabaseSession):
     return budget_service.get_budget_summary(db, budget_id, current_user)
 
 
 @router.patch("/{budget_id}", response_model=BudgetResponse)
 def update_budget(
     budget_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetWriter,
     payload: BudgetUpdate,
     db: DatabaseSession,
 ):
@@ -51,6 +51,6 @@ def update_budget(
 
 
 @router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_budget(budget_id: uuid.UUID, current_user: CurrentUser, db: DatabaseSession):
+def delete_budget(budget_id: uuid.UUID, current_user: BudgetWriter, db: DatabaseSession):
     budget_service.delete_budget(db, budget_id, current_user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

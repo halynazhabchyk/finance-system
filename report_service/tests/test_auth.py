@@ -80,3 +80,15 @@ def test_blocked_account_is_403(api):
     api.user_service_error = HTTPException(status_code=403, detail="The user account is not allowed to use the service.")
 
     assert api.client.get("/internal/reports/annual/2026", headers=bearer(make_token())).status_code == 403
+
+
+# --- ЛР №5, п. 4: OAuth scopes ----------------------------------------------------------------
+
+
+@pytest.mark.parametrize("path", ["/internal/reports/monthly/2026/11", "/internal/reports/annual/2026"])
+def test_reports_without_reports_read_are_403_insufficient_scope(api, path):
+    response = api.client.get(path, headers=bearer(make_token(scopes=("users:read", "budgets:read"))))
+
+    assert response.status_code == 403
+    assert response.headers["www-authenticate"] == 'Bearer error="insufficient_scope", scope="reports:read"'
+    assert api.calls == []

@@ -109,3 +109,67 @@ def test_health_and_docs_are_public(api):
     assert api.client.get("/internal/health").status_code == 200
     assert api.client.get("/docs").status_code == 200
     assert api.client.get("/openapi.json").status_code == 200
+
+
+# --- ЛР №5, п. 4: OAuth scopes (least privilege) ---------------------------------------------
+
+READ_ONLY = ("users:read", "budgets:read")
+
+
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("post", "/internal/budgets"),
+        ("patch", "/internal/budgets/{id}"),
+        ("delete", "/internal/budgets/{id}"),
+        ("post", "/internal/budgets/{id}/categories"),
+        ("patch", "/internal/budgets/{id}/categories/{id}"),
+        ("delete", "/internal/budgets/{id}/categories/{id}"),
+        ("post", "/internal/budgets/{id}/expenses"),
+        ("patch", "/internal/budgets/{id}/expenses/{id}"),
+        ("delete", "/internal/budgets/{id}/expenses/{id}"),
+    ],
+)
+def test_changes_without_budgets_write_are_403_insufficient_scope(api, method, path):
+    url = path.replace("{id}", str(uuid.uuid4()))
+
+    response = api.client.request(method.upper(), url, headers=bearer(make_token(scopes=READ_ONLY)), json={})
+
+    assert response.status_code == 403
+    assert response.headers["www-authenticate"] == 'Bearer error="insufficient_scope", scope="budgets:write"'
+    assert api.calls == []  # rejected locally, User Service is not asked
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/internal/budgets", "/internal/budgets/{id}", "/internal/budgets/{id}/expenses", "/internal/budgets/{id}/expenses/{id}/saga"],
+)
+def test_reading_without_budgets_read_is_403(api, path):
+    url = path.replace("{id}", str(uuid.uuid4()))
+
+    response = api.client.get(url, headers=bearer(make_token(scopes=("users:read", "budgets:write"))))
+
+    assert response.status_code == 403
+    assert 'scope="budgets:read"' in response.headers["www-authenticate"]
+
+
+def test_create_budget_with_budgets_write_is_201(api, monkeypatch):
+    from datetime import datetime, timezone
+
+    from app.api.routers import budgets as router_module
+
+    sub = uuid.uuid4()
+
+    def create_budget(db, user_id, payload):
+        return SimpleNamespace(
+            budget_id=uuid.uuid4(), user_id=user_id, period_start=payload.period_start, period_end=payload.period_end,
+            total_amount=payload.total_amount, currency=payload.currency, created_at=datetime(2026, 11, 1, tzinfo=timezone.utc),
+        )
+
+    monkeypatch.setattr(router_module.budget_service, "create_budget", create_budget)
+    token = make_token(sub, scopes=("users:read", "budgets:read", "budgets:write"))
+
+    response = api.client.post("/internal/budgets", headers=bearer(token), json={"period_start": "2026-11-01", "period_end": "2026-11-30", "total_amount": "1000.00"})
+
+    assert response.status_code == 201, response.text
+    assert api.calls == [(token, sub)]

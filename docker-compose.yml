@@ -8,6 +8,7 @@ services:
       - "--api.insecure=false"
       - "--ping=true"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.middlewares=security-headers@file"
       - "--providers.consulcatalog=true"
       - "--providers.consulcatalog.endpoint.address=consul:8500"
       - "--providers.consulcatalog.prefix=traefik"

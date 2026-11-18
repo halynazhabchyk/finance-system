@@ -124,3 +124,36 @@ def test_malformed_or_foreign_token_is_rejected(token_factory):
 
     with pytest.raises(AuthenticationFailed):
         run(scenario())
+
+
+def test_insufficient_scope_gets_its_own_llm_message():
+    """ЛР №5: 403 insufficient_scope must not read as "blocked account / another user's data"."""
+    from shared.ai_tools.gateway.errors import InsufficientScope
+
+    def handler(request):
+        return httpx.Response(
+            403,
+            json={"detail": "The access token does not grant the required scope."},
+            headers={"WWW-Authenticate": 'Bearer error="insufficient_scope", scope="budgets:write"'},
+        )
+
+    async def scenario():
+        client = FinanceApiClient(base_url="http://gateway.test", access_token="t", transport=httpx.MockTransport(handler))
+        try:
+            await client.create_category(uuid.uuid4(), {"name": "Food"})
+        finally:
+            await client.aclose()
+
+    with pytest.raises(InsufficientScope) as raised:
+        run(scenario())
+
+    assert raised.value.status_code == 403
+    assert raised.value.scope == "budgets:write"
+    assert '"budgets:write"' in raised.value.llm_message
+    assert "blocked" not in raised.value.llm_message
+
+
+def test_plain_403_keeps_the_access_denied_message():
+    error = GatewayError.from_response(403, {"detail": "x"}, 'Bearer error="invalid_token"')
+
+    assert error.llm_message.startswith("Access denied")

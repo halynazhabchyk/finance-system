@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 
 from shared.errors import PermissionDeniedError
 
-from app.api.dependencies import CurrentProfile, DatabaseSession
+from app.api.dependencies import DatabaseSession, ProfileReader, ProfileWriter
 from app.models import UserAccount
 from app.schemas import UserResponse, UserUpdateName
 from app.services import user_service
@@ -31,7 +31,7 @@ def list_users(
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(user_id: uuid.UUID, profile: CurrentProfile) -> UserResponse:
+def get_user(user_id: uuid.UUID, profile: ProfileReader) -> UserResponse:
     """Open Host Service: own profile of the token subject (created at the first sign-in)."""
     _require_owner(profile, user_id)
     return profile
@@ -42,7 +42,7 @@ def update_user_name(
     user_id: uuid.UUID,
     payload: UserUpdateName,
     db: DatabaseSession,
-    profile: CurrentProfile,
+    profile: ProfileWriter,
 ) -> UserResponse:
     _require_owner(profile, user_id)
     return user_service.update_user_name(db, user_id, payload)

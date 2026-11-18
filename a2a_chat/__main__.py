@@ -1,10 +1,14 @@
-"""Entry point: python -m a2a_chat [--agent budget|report] [--gateway URL] [--email EMAIL]."""
+"""Entry point: python -m a2a_chat [--agent budget|report] [--gateway URL].
+
+ЛР №5: the Keycloak access token is taken from A2A_ACCESS_TOKEN or a hidden prompt.
+"""
 
 from __future__ import annotations
 
 import argparse
 import asyncio
 import getpass
+import os
 import sys
 from collections.abc import Callable, Sequence
 
@@ -12,7 +16,7 @@ import httpx
 
 from shared.ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
 
-from a2a_chat.auth import LoginFailed, login
+from a2a_chat.auth import TOKEN_ENV, TokenProblem, inspect_token, read_token
 from a2a_chat.config import AGENTS, ChatSettings
 from a2a_chat.console import Console
 from a2a_chat.session import ChatSession
@@ -24,34 +28,33 @@ def parse_args(argv: Sequence[str] | None = None) -> ChatSettings:
     parser = argparse.ArgumentParser(prog="python -m a2a_chat", description="Чат з A2A-агентом фінансової системи.")
     parser.add_argument("--agent", choices=sorted(AGENTS), default="budget", help="агент: budget (producer) або report (consumer)")
     parser.add_argument("--gateway", help="адреса Gateway (за замовчуванням GATEWAY_URL або http://localhost:8080)")
-    parser.add_argument("--email", help="email користувача (інакше буде запитано)")
     args = parser.parse_args(argv)
-    return ChatSettings.build(args.agent, args.gateway, args.email)
+    return ChatSettings.build(args.agent, args.gateway)
 
 
 async def run(
     settings: ChatSettings,
     *,
     read: Reader = input,
-    read_password: Reader = getpass.getpass,
+    read_secret: Reader = getpass.getpass,
+    env_token: str | None = None,
     console: Console | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> int:
-    """``read``, ``read_password`` and ``transport`` are replaced in tests."""
+    """``read``, ``read_secret``, ``env_token`` and ``transport`` are replaced in tests."""
     console = console or Console()
     console.line(f"A2A-чат з {settings.target.name} через {settings.gateway_url}")
+    env_token = os.getenv(TOKEN_ENV) if env_token is None else env_token
     try:
-        email = settings.email or (await asyncio.to_thread(read, "Email: ")).strip()
-        password = await asyncio.to_thread(read_password, "Пароль: ")
+        token = read_token(env_token, lambda prompt: read_secret(prompt))
+        info = inspect_token(token)
     except (EOFError, KeyboardInterrupt):
         return 1
-
-    try:
-        token = await login(settings.gateway_url, email, password, transport=transport)
-    except LoginFailed as error:
+    except TokenProblem as error:
         console.error(str(error))
         return 1
-    console.info(f"Вхід виконано: {email}")
+    who = info.username or info.subject
+    console.info(f"Токен користувача {who}; дійсний ще ~{info.minutes_left()} хв; scopes: {' '.join(sorted(info.scopes)) or '-'}")
 
     async with RemoteAgentClient(
         base_url=settings.agent_url,

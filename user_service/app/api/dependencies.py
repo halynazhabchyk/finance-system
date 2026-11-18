@@ -51,3 +51,6 @@ def get_current_profile(
 
 
 CurrentProfile = Annotated[UserAccount, Depends(get_current_profile)]
+# ЛР №5, п. 4: least privilege – reading and renaming the profile need different scopes.
+ProfileReader = Annotated[UserAccount, Security(get_current_profile, scopes=["users:read"])]
+ProfileWriter = Annotated[UserAccount, Security(get_current_profile, scopes=["users:write"])]

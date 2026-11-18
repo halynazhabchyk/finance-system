@@ -1,16 +1,16 @@
-"""Interactive A2A client: login, Agent Card discovery, live states, follow-up answers, errors."""
+"""Interactive A2A client: Keycloak token, Agent Card discovery, live states, follow-up answers, errors."""
 
 import asyncio
 
-import httpx
 import pytest
 
 from a2a_chat.__main__ import parse_args, run
-from a2a_chat.auth import LoginFailed, login
+from a2a_chat.auth import TokenProblem, inspect_token, read_token
 from a2a_chat.config import AGENTS
 from a2a_chat.conversation import Conversation
 from a2a_chat.session import ChatSession
-from a2a_chat.tests.conftest import EMAIL, PASSWORD
+from a2a_chat.tests.conftest import VALID_TOKEN
+from shared.security.testing import make_token
 
 
 def chat(remote, console, *lines):
@@ -41,60 +41,40 @@ def test_follow_up_answer_is_sent_with_the_open_request():
     assert conversation.compose("Нове питання") == "Нове питання"
 
 
-# --- login ---------------------------------------------------------------------------------
+# --- token (ЛР №5) -------------------------------------------------------------------------
 
-def test_login_returns_the_token(gateway):
-    token = asyncio.run(login("http://gateway.test", EMAIL, PASSWORD, transport=gateway))
-    assert token == "valid-token"
+def test_token_comes_from_the_environment_first():
+    def must_not_ask(prompt):
+        raise AssertionError("no prompt expected")
+
+    assert read_token(" abc.def.ghi ", must_not_ask) == "abc.def.ghi"
 
 
-def test_wrong_password_is_reported(gateway):
-    with pytest.raises(LoginFailed, match="Невірний email або пароль"):
-        asyncio.run(login("http://gateway.test", EMAIL, "wrong", transport=gateway))
+def test_token_is_asked_in_a_hidden_prompt_and_bearer_prefix_is_dropped():
+    assert read_token(None, lambda prompt: "Bearer abc.def.ghi") == "abc.def.ghi"
+
+
+def test_missing_token_is_reported_with_instructions():
+    with pytest.raises(TokenProblem, match="A2A_ACCESS_TOKEN"):
+        read_token("", lambda prompt: "  ")
+
+
+def test_token_claims_are_shown_without_verification():
+    info = inspect_token(make_token(scopes=("budgets:read", "budgets:write"), preferred_username="student"))
+
+    assert info.username == "student"
+    assert info.scopes == {"budgets:read", "budgets:write"}
+    assert 3 <= info.minutes_left() <= 5
 
 
 @pytest.mark.parametrize(
-    "email,password",
-    [("", PASSWORD), ("   ", PASSWORD), (EMAIL, "")],
+    "token,message",
+    [("not-a-jwt", "не JWT"), (make_token(expires_in=-60), "Строк дії токена минув"), (make_token(sub=None), "sub або exp")],
+    ids=["garbage", "expired", "no-sub"],
 )
-def test_empty_credentials_are_rejected_without_a_request(email, password):
-    def must_not_be_called(request):
-        raise AssertionError("no request expected")
-
-    with pytest.raises(LoginFailed, match="Вкажіть email і пароль"):
-        asyncio.run(login("http://gateway.test", email, password, transport=httpx.MockTransport(must_not_be_called)))
-
-
-@pytest.mark.parametrize(
-    "response,message",
-    [
-        (httpx.Response(403, json={"detail": "inactive"}), "заблоковано"),
-        (httpx.Response(404, text="404 page not found"), "не зареєстрований у Consul"),
-        (httpx.Response(503, text="Service Unavailable"), "тимчасово недоступний"),
-        (httpx.Response(200, text="<html>proxy page</html>"), "не у форматі JSON"),
-        (httpx.Response(200, json={"token_type": "bearer"}), "не повернув access_token"),
-        (httpx.Response(200, json={"access_token": 123}), "не повернув access_token"),
-    ],
-)
-def test_unexpected_replies_become_clear_messages(response, message):
-    with pytest.raises(LoginFailed, match=message):
-        asyncio.run(login("http://gateway.test", EMAIL, PASSWORD, transport=httpx.MockTransport(lambda _: response)))
-
-
-def test_timeout_is_reported():
-    def slow(request):
-        raise httpx.ReadTimeout("timeout", request=request)
-
-    with pytest.raises(LoginFailed, match="не відповів"):
-        asyncio.run(login("http://gateway.test", EMAIL, PASSWORD, transport=httpx.MockTransport(slow)))
-
-
-def test_unreachable_gateway_is_reported():
-    def refuse(request):
-        raise httpx.ConnectError("refused", request=request)
-
-    with pytest.raises(LoginFailed, match="недоступний"):
-        asyncio.run(login("http://gateway.test", EMAIL, PASSWORD, transport=httpx.MockTransport(refuse)))
+def test_unusable_tokens_are_reported_before_any_request(token, message):
+    with pytest.raises(TokenProblem, match=message):
+        inspect_token(token)
 
 
 # --- session -------------------------------------------------------------------------------
@@ -140,35 +120,46 @@ def test_commands(remote, console, output, received_texts):
 
 
 def test_rejected_token_is_shown_as_an_error(remote, console, output):
-    chat(lambda: remote("expired-token"), console, "Додай 250 грн за листопад")
+    chat(lambda: remote(make_token()), console, "Додай 250 грн за листопад")
 
     assert any(line.startswith("[помилка]") for line in output)
+    assert any("Swagger" in line for line in output)  # how to get a new token
 
 
 # --- whole program -------------------------------------------------------------------------
 
-def test_run_logs_in_and_chats_until_exit(gateway, console, output):
+def test_run_uses_the_token_from_the_environment_and_chats_until_exit(gateway, console, output):
     lines = iter(["Додай витрату 250 грн на продукти за листопад 2026", "вихід"])
-    settings = parse_args(["--gateway", "http://gateway.test", "--email", EMAIL])
+    settings = parse_args(["--gateway", "http://gateway.test"])
+
+    def must_not_ask(prompt):
+        raise AssertionError("the token comes from A2A_ACCESS_TOKEN")
 
     code = asyncio.run(
-        run(settings, read=lambda _: next(lines), read_password=lambda _: PASSWORD, console=console, transport=gateway)
+        run(settings, read=lambda _: next(lines), read_secret=must_not_ask, env_token=VALID_TOKEN, console=console, transport=gateway)
     )
 
     text = "\n".join(output)
     assert code == 0
-    assert f"Вхід виконано: {EMAIL}" in text
+    assert "Токен користувача student" in text
     assert "[COMPLETED] Expense is CONFIRMED." in text
-    assert PASSWORD not in text  # the password is never printed
+    assert VALID_TOKEN not in text  # the token is never printed
 
 
-def test_run_stops_on_wrong_password(gateway, console, output):
-    settings = parse_args(["--gateway", "http://gateway.test", "--email", EMAIL])
+def test_run_stops_on_expired_token_without_calling_the_agent(console, output):
+    import httpx
 
-    code = asyncio.run(run(settings, read=input, read_password=lambda _: "wrong", console=console, transport=gateway))
+    def must_not_be_called(request):
+        raise AssertionError("no request expected")
+
+    settings = parse_args(["--gateway", "http://gateway.test"])
+    code = asyncio.run(
+        run(settings, read=input, read_secret=input, env_token=make_token(expires_in=-60), console=console,
+            transport=httpx.MockTransport(must_not_be_called))
+    )
 
     assert code == 1
-    assert "[помилка] Невірний email або пароль." in output
+    assert any("Строк дії токена минув" in line for line in output)
 
 
 def test_report_agent_can_be_chosen():
