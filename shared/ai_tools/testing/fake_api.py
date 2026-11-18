@@ -16,13 +16,13 @@ from decimal import Decimal
 from typing import Any
 
 import httpx
-import jwt
 
-TEST_JWT_SECRET = "test-secret-key-with-at-least-32-bytes!"
+from shared.security.testing import make_token
 
 
 def make_jwt(user_id: uuid.UUID) -> str:
-    return jwt.encode({"sub": str(user_id)}, TEST_JWT_SECRET, algorithm="HS256")
+    """A Keycloak-shaped RS256 access token signed by the test key (ЛР №5)."""
+    return make_token(user_id)
 
 
 def _now() -> str:
@@ -47,7 +47,10 @@ class FakeFinanceApi:
 
     @property
     def token(self) -> str:
-        return make_jwt(self.user_id)
+        """One token per fake user, so every request carries exactly the same string."""
+        if not hasattr(self, "_token"):
+            self._token = make_jwt(self.user_id)
+        return self._token
 
     def transport(self) -> httpx.MockTransport:
         return httpx.MockTransport(self._handle)

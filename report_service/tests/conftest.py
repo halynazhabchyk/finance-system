@@ -15,6 +15,7 @@ os.environ.setdefault("REPORT_DB_USER", "report_service_test")
 os.environ.setdefault("REPORT_DB_PASSWORD", "test-password")
 os.environ.setdefault("REPORT_DB_HOST", "localhost")
 os.environ.setdefault("CONSUL_ENABLED", "false")
+os.environ.setdefault("OIDC_AUDIENCE", "report-service")  # ЛР №5: tests override the verifier with test keys
 
 
 @pytest.fixture

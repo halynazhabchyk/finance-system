@@ -145,3 +145,30 @@ def test_active_content_is_400_without_tokens(assistant, message):
     assert response.json()["guardrail"] == "active_content"
     assert llm.requests == []
     assert api.requests == []
+
+
+def test_token_of_another_service_is_401_and_model_is_not_called(assistant):
+    """ЛР №5 (3.2, 4.3): the assistant checks the token itself – aud must contain ai-assistant."""
+    from shared.security.testing import make_token
+
+    api = FakeFinanceApi()
+    llm = ScriptedLLMClient([])
+    token = make_token(api.user_id, audience=("budget-service",))
+
+    response = assistant(api, llm).post("/internal/assistant/chat", json={"message": "Привіт"}, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert llm.requests == []
+    assert api.paths() == []  # rejected before any call to the services
+
+
+def test_keycloak_token_is_forwarded_to_the_services_unchanged(assistant):
+    """ЛР №5 (5.1): the same token reaches User/Budget Service through the gateway."""
+    api = FakeFinanceApi()
+    api.add_budget("2026-11")
+    llm = ScriptedLLMClient([tool_call_response(("find_budget_by_period", {"year": 2026, "month": 11})), final_answer("Готово.")])
+
+    response = assistant(api, llm).post("/internal/assistant/chat", json={"message": "Мій бюджет на листопад?"}, headers=auth(api))
+
+    assert response.status_code == 200
+    assert {request.headers["authorization"] for request in api.requests} == {f"Bearer {api.token}"}

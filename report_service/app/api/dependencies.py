@@ -1,22 +1,23 @@
-"""FastAPI dependencies: database session and the authenticated user."""
+"""FastAPI dependencies: database session and the authenticated user (ЛР №5: Keycloak token)."""
 
-import os
 import uuid
 from collections.abc import Generator
 from typing import Annotated
 
-import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, Security
 from sqlalchemy.orm import Session
 
 from shared.clients.user_service import validate_user_token
+from shared.security.fastapi import bearer_token_dependency
+from shared.security.jwt import VerifiedToken
+from shared.security.openapi import authorization_code_scheme
 
 from app.db.session import SessionLocal
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=os.getenv("PUBLIC_AUTH_URL", "/api/users/auth/login")
-)
+# OAuth scopes of this service's resources, shown in the Swagger "Authorize" dialog.
+SERVICE_SCOPES = ["reports:read"]
+oauth2_scheme = authorization_code_scheme(SERVICE_SCOPES, auto_error=False)
+verified_token = bearer_token_dependency(oauth2_scheme)
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -28,19 +29,10 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
-    """Read the subject from the token; User Service confirms the token and the account."""
-    try:
-        subject = jwt.decode(token, options={"verify_signature": False}).get("sub")
-        user_id = uuid.UUID(subject)
-    except (jwt.InvalidTokenError, TypeError, ValueError) as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from error
-    validate_user_token(token, user_id)
-    return user_id
+def get_current_user(token: Annotated[VerifiedToken, Security(verified_token)]) -> uuid.UUID:
+    """``user_id`` = ``sub`` of the token this service verified itself; User Service confirms the account."""
+    validate_user_token(token.raw, token.user_id)
+    return token.user_id
 
 
 # Shortcuts for route signatures.

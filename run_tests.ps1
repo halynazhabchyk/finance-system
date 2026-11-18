@@ -5,6 +5,7 @@ $suites = @(
     ".\user_service\tests",
     ".\budget_service\tests",
     ".\report_service\tests",
+    ".\shared\security\tests",
     ".\shared\ai_tools\tests",
     ".\ai_assistant\tests",
     ".\mcp_server\tests",

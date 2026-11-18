@@ -18,6 +18,9 @@ if project_root not in sys.path:
 from app.api.exception_handlers import register_exception_handlers
 from app.api.routers import budgets, categories, expenses, system
 from shared.web.openapi import install_public_openapi
+from shared.security.cors import install_cors
+from shared.security.openapi import swagger_ui_oauth_config
+from app.api.dependencies import SERVICE_SCOPES
 from shared.service_discovery.consul import ServiceConfig, service_registration
 from app.workers.outbox_publisher import OutboxPublisher
 from app.workers.saga_dlq_consumer import SagaDlqConsumer
@@ -70,6 +73,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         root_path=os.getenv("PUBLIC_API_PREFIX", ""),
         root_path_in_servers=False,
+        swagger_ui_init_oauth=swagger_ui_oauth_config(SERVICE_SCOPES),
     )
     install_public_openapi(
         app,
@@ -82,4 +86,5 @@ def create_app() -> FastAPI:
     app.include_router(budgets.router)
     app.include_router(categories.router)
     app.include_router(expenses.router)
+    install_cors(app)
     return app

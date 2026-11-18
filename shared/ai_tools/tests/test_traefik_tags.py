@@ -28,3 +28,19 @@ def test_existing_business_routes_are_unchanged():
     assert "traefik.http.routers.budget-service.rule=PathPrefix(`/api/budgets`)" in tags
     assert "traefik.http.middlewares.budget-service-internal.addprefix.prefix=/internal/budgets" in tags
     assert default_traefik_tags("scheduler") == []
+
+
+def test_user_service_publishes_only_own_profile_routes():
+    """ЛР №5 (Р6): no public list of users, no /block or /activate, no password login router."""
+    import re
+
+    tags = default_traefik_tags("user-service")
+    rule = next(tag for tag in tags if tag.startswith("traefik.http.routers.user-service.rule="))
+    pattern = re.search(r"PathRegexp\(`(.+)`\)", rule).group(1)
+    profile = "/api/users/05d32d26-2657-4042-aa14-088b89b43bee"
+
+    assert re.match(pattern, profile) and re.match(pattern, f"{profile}/name")
+    for internal in ("/api/users", "/api/users/", f"{profile}/block", f"{profile}/activate", "/api/users/auth/login"):
+        assert not re.match(pattern, internal), internal
+    assert not any("user-auth" in tag for tag in tags)
+    assert "traefik.http.routers.user-service-docs.rule=PathPrefix(`/api/users/docs`)" in tags

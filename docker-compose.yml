@@ -85,6 +85,63 @@ services:
       timeout: 5s
       retries: 10
 
+  # --- ЛР №5: authorization server. Its own PostgreSQL, not shared with the business services. ---
+
+  keycloak-db:
+    image: postgres:16
+    container_name: finance-keycloak-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: ${KC_DB_USERNAME:?Set KC_DB_USERNAME in .env}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:?Set KC_DB_PASSWORD in .env}
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    container_name: finance-keycloak
+    restart: unless-stopped
+    # Dev mode (HTTP, no build step); the realm is configuration as code, imported when absent.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      # Public address used by browsers and written to the "iss" claim; the path is served by Keycloak itself.
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HOSTNAME: ${OIDC_PUBLIC_BASE_URL:-http://localhost:8080/auth}
+      # Services inside Docker call http://keycloak:8080/auth (JWKS) – backchannel URLs follow the request.
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?Set KC_BOOTSTRAP_ADMIN_USERNAME in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?Set KC_BOOTSTRAP_ADMIN_PASSWORD in .env}
+      # Substituted into keycloak/realm-export.json (${GOOGLE_CLIENT_ID}); never stored in the file.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    expose:
+      - "8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      # The image has no curl: a raw HTTP request to the management port through bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
   user-service:
     build:
       context: .
@@ -95,7 +152,6 @@ services:
     environment:
       USER_DB_HOST: postgres
       POSTGRES_PORT: 5432
-      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       CONSUL_HOST: consul
       CONSUL_PORT: 8500
       SERVICE_NAME: user-service
@@ -105,11 +161,16 @@ services:
       CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
       CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
       CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
-      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
       PUBLIC_API_PREFIX: /api/users
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+      OIDC_AUDIENCE: user-service
     expose:
       - "8001"
     depends_on:
+      keycloak:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       consul:
@@ -130,7 +191,6 @@ services:
     environment:
       BUDGET_DB_HOST: postgres
       POSTGRES_PORT: 5432
-      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       CONSUL_HOST: consul
       CONSUL_PORT: 8500
       CONSUL_ENABLED: ${CONSUL_ENABLED:-true}
@@ -141,8 +201,11 @@ services:
       CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
       CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
       CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
-      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
       PUBLIC_API_PREFIX: /api/budgets
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+      OIDC_AUDIENCE: budget-service
       USER_SERVICE_NAME: user-service
       USER_SERVICE_REQUEST_TIMEOUT: ${USER_SERVICE_REQUEST_TIMEOUT:-5}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-finance}:${RABBITMQ_PASSWORD:-finance}@rabbitmq:5672/%2F
@@ -155,6 +218,8 @@ services:
     expose:
       - "8002"
     depends_on:
+      keycloak:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       consul:
@@ -193,11 +258,16 @@ services:
       RABBITMQ_MAX_DELIVERY_ATTEMPTS: ${RABBITMQ_MAX_DELIVERY_ATTEMPTS:-3}
       RABBITMQ_RETRY_DELAY_SECONDS: ${RABBITMQ_RETRY_DELAY_SECONDS:-5}
       REPORT_SIMULATE_FAILURE: ${REPORT_SIMULATE_FAILURE:-false}
-      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
       PUBLIC_API_PREFIX: /api/reports
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+      OIDC_AUDIENCE: report-service
     expose:
       - "8003"
     depends_on:
+      keycloak:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       consul:
@@ -231,7 +301,6 @@ services:
       CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-finance}:${RABBITMQ_PASSWORD:-finance}@rabbitmq:5672/%2F
       RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-finance.events}
-      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
       RABBITMQ_PUBLISH_RETRIES: ${RABBITMQ_PUBLISH_RETRIES:-3}
       RABBITMQ_RECONNECT_INTERVAL_SECONDS: ${RABBITMQ_RECONNECT_INTERVAL_SECONDS:-5}
       CONSUL_REQUEST_TIMEOUT: ${CONSUL_REQUEST_TIMEOUT:-5}
@@ -284,7 +353,10 @@ services:
       SERVICE_ID_PREFIX: ${AI_ASSISTANT_ID_PREFIX:-ai-assistant}
       SERVICE_PORT: 8020
       PUBLIC_API_PREFIX: /api/assistant
-      PUBLIC_AUTH_URL: ${PUBLIC_AUTH_URL:-/api/users/auth/login}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+      OIDC_AUDIENCE: ai-assistant
     expose:
       - "8020"
     depends_on: &ai-depends-on
@@ -376,3 +448,4 @@ volumes:
   consul_data:
   postgres_data:
   rabbitmq_data:
+  keycloak_db_data:

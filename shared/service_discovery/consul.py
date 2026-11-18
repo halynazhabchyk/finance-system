@@ -243,6 +243,14 @@ def _ai_component_tags(service_name: str, public_prefix: str, strip_prefix: bool
     return tags
 
 
+# ЛР №5 (decision Р6): only the user's own profile is public – GET /api/users/{id} (Open Host
+# Service) and PATCH /api/users/{id}/name. The list of users, /block and /activate stay internal
+# operations of User Service: Traefik answers 404 for them.
+PUBLIC_ROUTE_RULES: dict[str, str] = {
+    "user-service": "PathRegexp(`^/api/users/[0-9a-fA-F-]{36}(/name)?$`)",
+}
+
+
 def default_traefik_tags(service_name: str) -> list[str]:
     """Return Catalog Provider tags for the public API route of a service."""
     routes = {
@@ -273,27 +281,18 @@ def default_traefik_tags(service_name: str) -> list[str]:
     router = service_name
     strip_middleware = f"{service_name}-strip"
     add_middleware = f"{service_name}-internal"
+    rule = PUBLIC_ROUTE_RULES.get(service_name, f"PathPrefix(`{public_prefix}`)")
     tags = [
         "traefik.enable=true",
-        f"traefik.http.routers.{router}.rule=PathPrefix(`{public_prefix}`)",
+        f"traefik.http.routers.{router}.rule={rule}",
         f"traefik.http.routers.{router}.entrypoints=web",
         f"traefik.http.routers.{router}.service={service_name}",
         f"traefik.http.routers.{router}.middlewares={strip_middleware},{add_middleware}",
         f"traefik.http.middlewares.{strip_middleware}.stripprefix.prefixes={public_prefix}",
         f"traefik.http.middlewares.{add_middleware}.addprefix.prefix={internal_prefix}",
     ]
-    if service_name == "user-service":
-        tags.extend(
-            [
-                "traefik.http.routers.user-auth.rule=PathPrefix(`/api/users/auth`)",
-                "traefik.http.routers.user-auth.priority=100",
-                "traefik.http.routers.user-auth.entrypoints=web",
-                "traefik.http.routers.user-auth.service=user-service",
-                "traefik.http.routers.user-auth.middlewares=user-auth-strip,user-auth-internal",
-                "traefik.http.middlewares.user-auth-strip.stripprefix.prefixes=/api/users/auth",
-                "traefik.http.middlewares.user-auth-internal.addprefix.prefix=/internal/auth",
-            ]
-        )
+    # ЛР №5: the former "user-auth" router (/api/users/auth -> /internal/auth, password login)
+    # is gone – Keycloak issues the tokens.
     tags.extend(
         [
             f"traefik.http.routers.{service_name}-docs.rule=PathPrefix(`{public_prefix}/docs`)",

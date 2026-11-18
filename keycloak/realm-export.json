@@ -1,0 +1,360 @@
+{
+	"realm": "finance",
+	"displayName": "Finance System",
+	"enabled": true,
+	"sslRequired": "external",
+	"registrationAllowed": true,
+	"registrationEmailAsUsername": false,
+	"loginWithEmailAllowed": true,
+	"duplicateEmailsAllowed": false,
+	"verifyEmail": false,
+	"resetPasswordAllowed": false,
+	"rememberMe": false,
+	"accessTokenLifespan": 900,
+	"defaultSignatureAlgorithm": "RS256",
+	"clientScopes": [
+		{
+			"name": "basic",
+			"description": "OpenID Connect scope for the subject claim",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "false",
+				"display.on.consent.screen": "false",
+				"consent.screen.text": "OpenID Connect scope for the subject claim"
+			},
+			"protocolMappers": [
+				{
+					"name": "sub",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-sub-mapper",
+					"config": {
+						"access.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				},
+				{
+					"name": "auth_time",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-usersessionmodel-note-mapper",
+					"config": {
+						"user.session.note": "AUTH_TIME",
+						"claim.name": "auth_time",
+						"jsonType.label": "long",
+						"access.token.claim": "true",
+						"id.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "profile",
+			"description": "Your name and username",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Your name and username"
+			},
+			"protocolMappers": [
+				{
+					"name": "full name",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-full-name-mapper",
+					"config": {
+						"access.token.claim": "true",
+						"id.token.claim": "true",
+						"userinfo.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				},
+				{
+					"name": "username",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-usermodel-property-mapper",
+					"config": {
+						"user.attribute": "username",
+						"claim.name": "preferred_username",
+						"jsonType.label": "String",
+						"access.token.claim": "true",
+						"id.token.claim": "true",
+						"userinfo.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				},
+				{
+					"name": "given name",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-usermodel-property-mapper",
+					"config": {
+						"user.attribute": "firstName",
+						"claim.name": "given_name",
+						"jsonType.label": "String",
+						"access.token.claim": "true",
+						"id.token.claim": "true",
+						"userinfo.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				},
+				{
+					"name": "family name",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-usermodel-property-mapper",
+					"config": {
+						"user.attribute": "lastName",
+						"claim.name": "family_name",
+						"jsonType.label": "String",
+						"access.token.claim": "true",
+						"id.token.claim": "true",
+						"userinfo.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "email",
+			"description": "Your email address",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Your email address"
+			},
+			"protocolMappers": [
+				{
+					"name": "email",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-usermodel-property-mapper",
+					"config": {
+						"user.attribute": "email",
+						"claim.name": "email",
+						"jsonType.label": "String",
+						"access.token.claim": "true",
+						"id.token.claim": "true",
+						"userinfo.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				},
+				{
+					"name": "email verified",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-usermodel-property-mapper",
+					"config": {
+						"user.attribute": "emailVerified",
+						"claim.name": "email_verified",
+						"jsonType.label": "boolean",
+						"access.token.claim": "true",
+						"id.token.claim": "true",
+						"userinfo.token.claim": "true",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "users:read",
+			"description": "Read your own profile (User Service)",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Read your own profile (User Service)"
+			},
+			"protocolMappers": [
+				{
+					"name": "audience user-service",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"config": {
+						"included.custom.audience": "user-service",
+						"access.token.claim": "true",
+						"id.token.claim": "false",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "users:write",
+			"description": "Change your own profile (User Service)",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Change your own profile (User Service)"
+			},
+			"protocolMappers": [
+				{
+					"name": "audience user-service",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"config": {
+						"included.custom.audience": "user-service",
+						"access.token.claim": "true",
+						"id.token.claim": "false",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "budgets:read",
+			"description": "Read budgets, categories and expenses (Budget Service)",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Read budgets, categories and expenses (Budget Service)"
+			},
+			"protocolMappers": [
+				{
+					"name": "audience budget-service",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"config": {
+						"included.custom.audience": "budget-service",
+						"access.token.claim": "true",
+						"id.token.claim": "false",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "budgets:write",
+			"description": "Create and change budgets, categories and expenses (Budget Service)",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Create and change budgets, categories and expenses (Budget Service)"
+			},
+			"protocolMappers": [
+				{
+					"name": "audience budget-service",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"config": {
+						"included.custom.audience": "budget-service",
+						"access.token.claim": "true",
+						"id.token.claim": "false",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "reports:read",
+			"description": "Read monthly and annual reports (Report Service)",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Read monthly and annual reports (Report Service)"
+			},
+			"protocolMappers": [
+				{
+					"name": "audience report-service",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"config": {
+						"included.custom.audience": "report-service",
+						"access.token.claim": "true",
+						"id.token.claim": "false",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		},
+		{
+			"name": "assistant:chat",
+			"description": "Talk to the AI assistant (ai-assistant)",
+			"protocol": "openid-connect",
+			"attributes": {
+				"include.in.token.scope": "true",
+				"display.on.consent.screen": "true",
+				"consent.screen.text": "Talk to the AI assistant (ai-assistant)"
+			},
+			"protocolMappers": [
+				{
+					"name": "audience ai-assistant",
+					"protocol": "openid-connect",
+					"protocolMapper": "oidc-audience-mapper",
+					"config": {
+						"included.custom.audience": "ai-assistant",
+						"access.token.claim": "true",
+						"id.token.claim": "false",
+						"introspection.token.claim": "true"
+					}
+				}
+			]
+		}
+	],
+	"defaultDefaultClientScopes": [
+		"basic",
+		"profile",
+		"email"
+	],
+	"defaultOptionalClientScopes": [],
+	"clients": [
+		{
+			"clientId": "finance-swagger",
+			"name": "Swagger UI of the finance services",
+			"description": "Public client: Authorization Code with PKCE (S256), no implicit flow, no password grant.",
+			"enabled": true,
+			"protocol": "openid-connect",
+			"publicClient": true,
+			"standardFlowEnabled": true,
+			"implicitFlowEnabled": false,
+			"directAccessGrantsEnabled": false,
+			"serviceAccountsEnabled": false,
+			"frontchannelLogout": true,
+			"fullScopeAllowed": false,
+			"redirectUris": [
+				"http://localhost:8080/api/users/docs/oauth2-redirect",
+				"http://localhost:8080/api/budgets/docs/oauth2-redirect",
+				"http://localhost:8080/api/reports/docs/oauth2-redirect",
+				"http://localhost:8080/api/assistant/docs/oauth2-redirect"
+			],
+			"webOrigins": [
+				"+"
+			],
+			"attributes": {
+				"pkce.code.challenge.method": "S256",
+				"post.logout.redirect.uris": "+",
+				"oauth2.device.authorization.grant.enabled": "false"
+			},
+			"defaultClientScopes": [
+				"basic",
+				"profile",
+				"email",
+				"users:read",
+				"budgets:read",
+				"reports:read",
+				"assistant:chat"
+			],
+			"optionalClientScopes": [
+				"users:write",
+				"budgets:write"
+			]
+		}
+	],
+	"identityProviders": [
+		{
+			"alias": "google",
+			"displayName": "Google",
+			"providerId": "google",
+			"enabled": true,
+			"trustEmail": true,
+			"storeToken": false,
+			"firstBrokerLoginFlowAlias": "first broker login",
+			"config": {
+				"clientId": "${GOOGLE_CLIENT_ID}",
+				"clientSecret": "${GOOGLE_CLIENT_SECRET}",
+				"defaultScope": "openid profile email",
+				"syncMode": "IMPORT"
+			}
+		}
+	]
+}

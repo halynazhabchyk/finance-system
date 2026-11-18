@@ -1,18 +1,26 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Query
 
-from app.api.dependencies import get_current_user_id, get_db
-from app.schemas import UserCreate, UserResponse, UserUpdateName
+from shared.errors import PermissionDeniedError
+
+from app.api.dependencies import CurrentProfile, DatabaseSession
+from app.models import UserAccount
+from app.schemas import UserResponse, UserUpdateName
 from app.services import user_service
 
 
 router = APIRouter(prefix="/internal/users", tags=["users"])
-DatabaseSession = Annotated[Session, Depends(get_db)]
 
 
+def _require_owner(profile: UserAccount, user_id: uuid.UUID) -> None:
+    """``user_id`` in the path names a user, so another user's id is 403 (nothing to hide)."""
+    if profile.user_id != user_id:
+        raise PermissionDeniedError("The token does not authorize access to this user.")
+
+
+# Internal operation: not published through Traefik (ЛР №5, decision Р6).
 @router.get("", response_model=list[UserResponse])
 def list_users(
     db: DatabaseSession,
@@ -22,23 +30,11 @@ def list_users(
     return user_service.list_users(db, limit=limit, offset=offset)
 
 
-@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(payload: UserCreate, db: DatabaseSession) -> UserResponse:
-    return user_service.create_user(db, payload)
-
-
 @router.get("/{user_id}", response_model=UserResponse)
-def get_user(
-    user_id: uuid.UUID,
-    db: DatabaseSession,
-    current_user_id: uuid.UUID = Depends(get_current_user_id),
-) -> UserResponse:
-    if current_user_id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The token does not authorize access to this user.",
-        )
-    return user_service.get_user_or_404(db, user_id)
+def get_user(user_id: uuid.UUID, profile: CurrentProfile) -> UserResponse:
+    """Open Host Service: own profile of the token subject (created at the first sign-in)."""
+    _require_owner(profile, user_id)
+    return profile
 
 
 @router.patch("/{user_id}/name", response_model=UserResponse)
@@ -46,10 +42,13 @@ def update_user_name(
     user_id: uuid.UUID,
     payload: UserUpdateName,
     db: DatabaseSession,
+    profile: CurrentProfile,
 ) -> UserResponse:
+    _require_owner(profile, user_id)
     return user_service.update_user_name(db, user_id, payload)
 
 
+# Internal operations: not published through Traefik (ЛР №5, decision Р6).
 @router.patch("/{user_id}/activate", response_model=UserResponse)
 def activate_user(user_id: uuid.UUID, db: DatabaseSession) -> UserResponse:
     return user_service.activate_user(db, user_id)
