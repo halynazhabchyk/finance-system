@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-import os
 import uuid
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, update
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.models import SagaInstance
 from app.models.expense import EXPENSE_CONFIRMED, EXPENSE_PENDING
 from app.models.saga_instance import (
@@ -30,7 +30,7 @@ MAX_ERROR_LENGTH = 1000
 
 
 def saga_timeout_seconds() -> int:
-    return max(1, int(os.getenv("SAGA_TIMEOUT_SECONDS", "30")))
+    return get_settings().saga_timeout_seconds
 
 
 def utcnow() -> datetime:

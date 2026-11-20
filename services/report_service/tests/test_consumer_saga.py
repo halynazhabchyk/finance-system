@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.core.config import get_settings
 from factories import saga_event
 
 
@@ -23,6 +24,7 @@ def test_saga_step_replies_expense_processed_after_commit(consumer_env, replies)
 def test_simulated_failure_rolls_back_consumer_transaction(consumer_env, replies, monkeypatch):
     module, session, calls = consumer_env
     monkeypatch.setenv("REPORT_SIMULATE_FAILURE", "true")
+    get_settings.cache_clear()
 
     with pytest.raises(module.SimulatedProcessingError):
         module.ReportEventConsumer().handle(saga_event())
@@ -37,6 +39,7 @@ def test_simulated_failure_rolls_back_consumer_transaction(consumer_env, replies
 def test_simulated_failure_does_not_block_compensation(consumer_env, replies, monkeypatch):
     module, session, calls = consumer_env
     monkeypatch.setenv("REPORT_SIMULATE_FAILURE", "true")
+    get_settings.cache_clear()
 
     module.ReportEventConsumer().handle(saga_event("ExpenseCancelled"))
 

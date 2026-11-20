@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import logging
-import os
 import uuid
 
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.core.config import get_settings
 from app.models import OutboxEvent
 from app.models.outbox_event import OUTBOX_PENDING
 
@@ -19,11 +19,7 @@ class SimulatedOutboxError(SQLAlchemyError):
 
 
 def outbox_failure_simulated() -> bool:
-    return os.getenv("OUTBOX_SIMULATE_FAILURE", "false").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-    }
+    return get_settings().outbox_simulate_failure
 
 
 def add_outbox_event(db, event: dict) -> OutboxEvent:

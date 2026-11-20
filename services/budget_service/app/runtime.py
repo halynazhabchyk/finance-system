@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import os
 import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
+from app.core.config import get_settings
 
 from shared.log import configure_logging
 
@@ -25,6 +26,7 @@ from app.workers.saga_timeout_watcher import SagaTimeoutWatcher
 
 def create_app() -> FastAPI:
     configure_logging()
+    settings = get_settings()
     service_config = ServiceConfig.from_env("budget-service", 8002)
 
     @asynccontextmanager
@@ -57,14 +59,14 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Budget Service",
         lifespan=lifespan,
-        root_path=os.getenv("PUBLIC_API_PREFIX", ""),
+        root_path=settings.public_api_prefix,
         root_path_in_servers=False,
         swagger_ui_init_oauth=swagger_ui_oauth_config(SERVICE_SCOPES),
     )
     install_public_openapi(
         app,
         path_mappings={
-            "/internal/budgets": os.getenv("PUBLIC_API_PREFIX", "/api/budgets"),
+            "/internal/budgets": settings.public_api_prefix or "/api/budgets",
         },
     )
     register_exception_handlers(app)

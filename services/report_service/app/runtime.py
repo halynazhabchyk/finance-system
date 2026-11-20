@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
+from app.core.config import get_settings
 
 from shared.log import configure_logging
 
@@ -21,6 +22,7 @@ from shared.service_discovery.consul import ServiceConfig, service_registration
 
 def create_app() -> FastAPI:
     configure_logging()
+    settings = get_settings()
     service_config = ServiceConfig.from_env("report-service", 8003)
 
     @asynccontextmanager
@@ -36,14 +38,14 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Report Service",
         lifespan=lifespan,
-        root_path=os.getenv("PUBLIC_API_PREFIX", ""),
+        root_path=settings.public_api_prefix,
         root_path_in_servers=False,
         swagger_ui_init_oauth=swagger_ui_oauth_config(SERVICE_SCOPES),
     )
     install_public_openapi(
         app,
         path_mappings={
-            "/internal/reports": os.getenv("PUBLIC_API_PREFIX", "/api/reports"),
+            "/internal/reports": settings.public_api_prefix or "/api/reports",
         },
     )
     register_domain_error_handler(app)

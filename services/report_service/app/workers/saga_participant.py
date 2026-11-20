@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import os
 import uuid
 
 from shared.contracts.events import new_event
+
+from app.core.config import get_settings
 
 SAGA_STEP_EVENT = "ExpenseCreated"
 SAGA_REPLY_EVENT = "ExpenseProcessed"
@@ -18,11 +19,7 @@ class SimulatedProcessingError(RuntimeError):
 
 
 def processing_failure_simulated() -> bool:
-    return os.getenv("REPORT_SIMULATE_FAILURE", "false").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-    }
+    return get_settings().report_simulate_failure
 
 
 def is_saga_step(event: dict) -> bool:

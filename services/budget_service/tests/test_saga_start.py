@@ -1,6 +1,7 @@
 """T1 of the "create expense" SAGA and the HTTP view of its state."""
 
 import uuid
+from app.core.config import get_settings
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ def test_saga_start_sets_deadline_from_timeout(monkeypatch, db):
     from app.services.saga import SagaService
 
     monkeypatch.setenv("SAGA_TIMEOUT_SECONDS", "30")
+    get_settings.cache_clear()
     expense_id = uuid.uuid4()
 
     saga = SagaService().start_create_expense(db, expense_id)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-import socket
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -11,6 +9,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from shared.errors import BusinessRuleError
+from app.core.config import get_settings
 from app.db.transaction import write_transaction
 from app.integrations.events import build_budget_deleted_event
 from app.integrations.outbox import add_outbox_event
@@ -56,7 +55,7 @@ def get_budget_summary(db: Session, budget_id: uuid.UUID, user_id: uuid.UUID) ->
         ],
         "expenses": expenses,
         "service": SERVICE_NAME,
-        "instance_id": os.getenv("HOSTNAME") or socket.gethostname(),
+        "instance_id": get_settings().instance_id,
     }
 
 

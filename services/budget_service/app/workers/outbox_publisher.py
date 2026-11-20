@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from datetime import datetime, timezone
 
+from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.repositories import outbox as repository
 from shared.messaging.publisher import publish_event
@@ -20,9 +20,7 @@ class OutboxPublisher:
     """Polling publisher: moves PENDING outbox rows to RabbitMQ in creation order."""
 
     def __init__(self, poll_interval: float | None = None, session_factory=None) -> None:
-        self.poll_interval = poll_interval or float(
-            os.getenv("OUTBOX_POLL_INTERVAL", "2")
-        )
+        self.poll_interval = poll_interval or get_settings().outbox_poll_interval
         self.session_factory = session_factory or SessionLocal
 
     def publish_pending_once(self) -> bool:

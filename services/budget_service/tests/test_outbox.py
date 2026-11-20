@@ -1,4 +1,5 @@
 import uuid
+from app.core.config import get_settings
 from datetime import date
 from decimal import Decimal
 from types import SimpleNamespace
@@ -187,6 +188,7 @@ def test_outbox_write_failure_rolls_back_business_change(monkeypatch, db):
     from app.services import common, expenses
 
     monkeypatch.setenv("OUTBOX_SIMULATE_FAILURE", "true")
+    get_settings.cache_clear()
     budget = SimpleNamespace(
         budget_id=uuid.uuid4(),
         period_start=date(2026, 1, 1),

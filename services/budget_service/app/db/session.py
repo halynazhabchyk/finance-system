@@ -1,16 +1,12 @@
 """Database of the service: engine, sessions and the declarative base."""
 
-from pathlib import Path
-
-from dotenv import load_dotenv
 from sqlalchemy.orm import DeclarativeBase
 
-from shared.db import DatabaseSettings, create_session_factory
+from shared.db import create_session_factory
 
-SERVICE_ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(SERVICE_ROOT / ".env")
+from app.core.config import get_settings
 
-DATABASE = DatabaseSettings.from_env("BUDGET")
+DATABASE = get_settings().database
 engine, SessionLocal = create_session_factory(DATABASE)
 
 

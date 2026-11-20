@@ -18,3 +18,13 @@ def client(monkeypatch):
     import app.main as main
 
     return TestClient(main.app)
+
+
+@pytest.fixture(autouse=True)
+def fresh_settings():
+    """Settings are cached per process; every test starts from the current environment."""
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()

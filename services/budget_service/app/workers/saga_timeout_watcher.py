@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 
+from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models.saga_instance import REASON_TIMEOUT
 from app.repositories import sagas as saga_repository
@@ -23,7 +23,7 @@ class SagaTimeoutWatcher:
         session_factory=None,
         handler: CompensationHandler | None = None,
     ) -> None:
-        self.interval = interval or float(os.getenv("SAGA_WATCH_INTERVAL", "5"))
+        self.interval = interval or get_settings().saga_watch_interval
         self.session_factory = session_factory or SessionLocal
         self.handler = handler or CompensationHandler(self.session_factory)
 
