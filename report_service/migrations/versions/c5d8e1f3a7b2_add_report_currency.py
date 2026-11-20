@@ -1,9 +1,8 @@
-"""add currency to monthly reports
+"""add currency to monthly reports.
 
 Revision ID: c5d8e1f3a7b2
 Revises: 8c4e7a9b2d1f
 Create Date: 2026-11-01 16:10:00
-
 """
 from typing import Sequence, Union
 

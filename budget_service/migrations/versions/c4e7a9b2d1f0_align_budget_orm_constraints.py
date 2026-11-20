@@ -1,9 +1,8 @@
-"""align budget schema with ORM constraints
+"""align budget schema with ORM constraints.
 
 Revision ID: c4e7a9b2d1f0
 Revises: 8d61b293a4fe
 Create Date: 2026-10-31 16:10:00
-
 """
 from typing import Sequence, Union
 

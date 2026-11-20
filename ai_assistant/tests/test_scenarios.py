@@ -1,9 +1,4 @@
-"""Scenarios of requirements 3.2 (chained tool calls) and 3.5 (guardrails), end to end through the API.
-
-The LLM is scripted: these tests check our code (loop, tools, guardrails),
-not the behaviour of a real model. The same prompts are run against Gemini on
-the stand with docs/labs/lab-04/scripts/lab4-scenarios.ps1.
-"""
+"""Scenarios of requirements 3.2 (chained tool calls) and 3.5 (guardrails), end to end through the API."""
 
 import logging
 from datetime import date
@@ -52,7 +47,7 @@ def names(response):
     return [call["name"] for call in response.json()["tool_calls"]]
 
 
-# --- 3.2: chained prompts -------------------------------------------------
+# --- 3.2: chained prompts ---
 
 
 def test_how_much_can_i_still_spend_on_entertainment(chat):
@@ -72,7 +67,7 @@ def test_how_much_can_i_still_spend_on_entertainment(chat):
     response = chat(api, llm, "Скільки я ще можу витратити на розваги в листопаді?")
 
     assert names(response) == ["find_budget_by_period", "get_budget_by_categories"]
-    # The number in the answer comes from the service, not from model arithmetic.
+    # The number comes from the service, not from the model.
     assert llm.last_tool_results()[0]["categories"][0]["available_amount"] == "650.00 UAH"
 
 
@@ -95,7 +90,7 @@ def test_compare_october_and_november(chat):
     assert api.paths()[-2:] == ["GET /api/reports/monthly/2026/10", "GET /api/reports/monthly/2026/11"]
 
 
-# --- 3.5: guardrails ------------------------------------------------------
+# --- 3.5: guardrails ---
 
 
 def test_token_limit_stops_the_chain(chat):

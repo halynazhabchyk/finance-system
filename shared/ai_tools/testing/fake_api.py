@@ -1,9 +1,4 @@
-"""In-memory imitation of the public REST API (Traefik -> User/Budget/Report Service).
-
-Response bodies follow the real contracts (BudgetResponse, BudgetSummary,
-CategoryResponse, ExpenseResponse, SagaResponse, MonthlyReportResponse), so the
-tools and projections are tested against the same shapes as on the stand.
-"""
+"""In-memory imitation of the public REST API (Traefik -> User/Budget/Report Service)."""
 
 from __future__ import annotations
 
@@ -16,13 +11,13 @@ from decimal import Decimal
 from typing import Any
 
 import httpx
-import jwt
 
-TEST_JWT_SECRET = "test-secret-key-with-at-least-32-bytes!"
+from shared.security.testing import make_token
 
 
 def make_jwt(user_id: uuid.UUID) -> str:
-    return jwt.encode({"sub": str(user_id)}, TEST_JWT_SECRET, algorithm="HS256")
+    """Keycloak-like RS256 token signed by the test key."""
+    return make_token(user_id)
 
 
 def _now() -> str:
@@ -43,16 +38,19 @@ class FakeFinanceApi:
     reports: dict[tuple[int, int], dict[str, Any]] = field(default_factory=dict)
     requests: list[httpx.Request] = field(default_factory=list)
     fail_with: int | None = None
-    saga_outcome: str = "COMPLETED"  # COMPLETED | CANCELLED (DLQ) after the first status poll
+    saga_outcome: str = "COMPLETED"  # COMPLETED | CANCELLED
 
     @property
     def token(self) -> str:
-        return make_jwt(self.user_id)
+        """One token per fake user, so every request carries exactly the same string."""
+        if not hasattr(self, "_token"):
+            self._token = make_jwt(self.user_id)
+        return self._token
 
     def transport(self) -> httpx.MockTransport:
         return httpx.MockTransport(self._handle)
 
-    # --- seeding --------------------------------------------------------
+    # --- seeding ---
 
     def add_budget(self, period: str, total: str = "10000.00") -> str:
         year, month = (int(part) for part in period.split("-"))
@@ -105,7 +103,7 @@ class FakeFinanceApi:
     def paths(self) -> list[str]:
         return [f"{request.method} {request.url.path}" for request in self.requests]
 
-    # --- request handling ----------------------------------------------
+    # --- request handling ---
 
     def _handle(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)

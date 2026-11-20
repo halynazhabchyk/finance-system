@@ -2,25 +2,37 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 project_root = str(Path(__file__).resolve().parents[2])
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from app.api.routers import auth, system, users
+from app.api.routers import system, users
 from shared.web.errors import register_domain_error_handler
 from shared.web.openapi import install_public_openapi
+from shared.security.cors import install_cors
+from shared.security.openapi import swagger_ui_oauth_config
+from app.api.dependencies import SERVICE_SCOPES
 from shared.service_discovery.consul import ServiceConfig, service_registration
 
 
+def configure_logging() -> None:
+    """Root handler so INFO logs (token verification, security.token) are visible."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+
 def create_app() -> FastAPI:
+    configure_logging()
     service_config = ServiceConfig.from_env("user-service", 8001)
 
     @asynccontextmanager
@@ -33,23 +45,16 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         root_path=os.getenv("PUBLIC_API_PREFIX", ""),
         root_path_in_servers=False,
+        swagger_ui_init_oauth=swagger_ui_oauth_config(SERVICE_SCOPES),
     )
     install_public_openapi(
         app,
         path_mappings={
             "/internal/users": os.getenv("PUBLIC_API_PREFIX", "/api/users"),
-            "/internal/auth": f"{os.getenv('PUBLIC_API_PREFIX', '/api/users')}/auth",
         },
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["http://localhost:8002"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
     )
     register_domain_error_handler(app)
     app.include_router(system.router)
     app.include_router(users.router)
-    app.include_router(auth.router)
+    install_cors(app)
     return app

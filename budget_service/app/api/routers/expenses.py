@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Response, status
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from app.api.dependencies import BudgetReader, BudgetWriter, DatabaseSession
 from app.schemas import ExpenseCreate, ExpenseResponse, ExpenseUpdate, SagaResponse
 from app.services import expenses as expense_service
 
@@ -12,14 +12,14 @@ router = APIRouter(prefix="/internal/budgets/{budget_id}/expenses", tags=["expen
 
 
 @router.get("", response_model=list[ExpenseResponse])
-def list_expenses(budget_id: uuid.UUID, current_user: CurrentUser, db: DatabaseSession):
+def list_expenses(budget_id: uuid.UUID, current_user: BudgetReader, db: DatabaseSession):
     return expense_service.list_expenses(db, budget_id, current_user)
 
 
 @router.post("", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 def create_expense(
     budget_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetWriter,
     payload: ExpenseCreate,
     db: DatabaseSession,
 ):
@@ -30,7 +30,7 @@ def create_expense(
 def update_expense(
     budget_id: uuid.UUID,
     expense_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetWriter,
     payload: ExpenseUpdate,
     db: DatabaseSession,
 ):
@@ -41,7 +41,7 @@ def update_expense(
 def delete_expense(
     budget_id: uuid.UUID,
     expense_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetWriter,
     db: DatabaseSession,
 ):
     expense_service.delete_expense(db, budget_id, expense_id, current_user)
@@ -52,7 +52,7 @@ def delete_expense(
 def get_expense_saga(
     budget_id: uuid.UUID,
     expense_id: uuid.UUID,
-    current_user: CurrentUser,
+    current_user: BudgetReader,
     db: DatabaseSession,
 ):
     return expense_service.get_expense_saga(db, budget_id, expense_id, current_user)

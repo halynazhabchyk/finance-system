@@ -1,4 +1,4 @@
-"""Function-calling loop with a scripted LLM (requirement 2.4, limits of 3.1)."""
+"""Function-calling loop with a scripted LLM."""
 
 import asyncio
 

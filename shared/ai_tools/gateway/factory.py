@@ -1,8 +1,4 @@
-"""How a component creates a REST client for one user (one JWT).
-
-Shared by ai-assistant, mcp-server and the A2A agents: a client is created per
-request with the caller's token, so no user state lives in the process.
-"""
+"""How a component creates a REST client for one user (one JWT)."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""extend processed_events into a transactional inbox
+"""extend processed_events into a transactional inbox.
 
 Revision ID: e9a1b3c5d7f2
 Revises: d6e8f1a3b5c7

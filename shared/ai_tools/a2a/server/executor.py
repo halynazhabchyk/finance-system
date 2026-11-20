@@ -1,11 +1,4 @@
-"""``SkillExecutor`` – an A2A ``AgentExecutor`` that dispatches tasks to skill handlers.
-
-Responsibilities shared by both agents:
-* create the task and report every state change (logged with task_id);
-* take the caller's JWT from the request and open an API client with it;
-* apply guardrails to text parts (length, prompt-injection filter);
-* turn expected failures into FAILED / REJECTED states with a clear message.
-"""
+"""SkillExecutor – an A2A AgentExecutor that dispatches tasks to skill handlers."""
 
 from __future__ import annotations
 

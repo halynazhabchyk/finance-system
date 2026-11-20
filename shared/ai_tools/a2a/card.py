@@ -72,7 +72,7 @@ def build_agent_card(
                 http_auth_security_scheme=HTTPAuthSecurityScheme(
                     scheme="bearer",
                     bearer_format="JWT",
-                    description="Access token of User Service (POST /api/users/auth/login).",
+                    description="Keycloak access token (OAuth 2.0 Authorization Code + PKCE, realm finance); forwarded unchanged to the services.",
                 )
             )
         },

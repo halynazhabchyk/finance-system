@@ -1,9 +1,4 @@
-"""A real A2A server for the client tests, built from the shared server components.
-
-Its text skill replaces the language model with a simple rule: without a month
-in the text it asks for one (INPUT_REQUIRED); otherwise it reports progress and
-completes with an ``expense`` artifact, like budget-agent does after the SAGA.
-"""
+"""A real A2A server for the client tests, built from the shared server components."""
 
 from __future__ import annotations
 

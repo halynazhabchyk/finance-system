@@ -34,7 +34,7 @@ def test_agent_card(api):
     assert "bearerAuth" in card["securitySchemes"]
 
 
-# --- analytical skills ---------------------------------------------------------
+# --- analytical skills ---
 
 
 def test_analyze_monthly_spending_without_explanation(remote, api):
@@ -96,7 +96,7 @@ def test_invalid_month_is_rejected(remote, api):
     assert not any("/reports/" in path for path in api.paths())
 
 
-# --- A2A integration with budget-agent ------------------------------------------
+# --- A2A integration with budget-agent ---
 
 
 def _expense_args(api):
@@ -118,7 +118,7 @@ def test_register_expense_and_report_through_budget_agent(remote, api, caplog):
     assert data["expense"]["saga_status"] == "CONFIRMED"
     assert data["monthly_report"]["period"] == "2026-11"
     assert "CONFIRMED" in result.message
-    # report-agent relayed the progress of the remote task in its own WORKING updates.
+    # Remote progress is relayed as WORKING updates.
     assert result.states.count("WORKING") >= 2
     assert "a2a_agent_card_resolved name=budget-agent" in caplog.text
     assert "advertised_url=http://localhost:8080/agents/budget/ used_url=http://gateway.test/agents/budget" in caplog.text

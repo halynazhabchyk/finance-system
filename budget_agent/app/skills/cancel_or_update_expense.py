@@ -1,8 +1,4 @@
-"""Skill ``cancel_or_update_expense``: change or delete an expense only after explicit confirmation.
-
-Deterministic, no LLM (decision Р1). Budget Service allows this only for
-CONFIRMED expenses (ЛР №3), otherwise it answers 409 and the task FAILS.
-"""
+"""Skill cancel_or_update_expense: change or delete an expense only after explicit confirmation."""
 
 from __future__ import annotations
 

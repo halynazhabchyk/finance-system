@@ -14,8 +14,8 @@ os.environ.setdefault("BUDGET_DB_NAME", "budget_service_test")
 os.environ.setdefault("BUDGET_DB_USER", "budget_service_test")
 os.environ.setdefault("BUDGET_DB_PASSWORD", "test-password")
 os.environ.setdefault("BUDGET_DB_HOST", "localhost")
-os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-with-at-least-32-bytes")
 os.environ.setdefault("CONSUL_ENABLED", "false")
+os.environ.setdefault("OIDC_AUDIENCE", "budget-service")  # tests use test keys
 
 
 class FakeSession:

@@ -47,8 +47,7 @@ class LLMSettings:
     temperature: float
     max_output_tokens: int
     request_timeout_seconds: float
-    # How much the model reasons before answering (hidden thinking tokens are billed as output).
-    # None keeps the provider default.
+    # Model thinking level; None keeps the provider default.
     thinking_level: str | None = None
 
     @classmethod

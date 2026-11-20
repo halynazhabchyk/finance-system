@@ -1,12 +1,4 @@
-"""Minimal tool results for the model (requirement 2.3).
-
-Only identifiers, names, amounts with currency and statuses are kept. Service
-fields (``instance_id``, ``created_at``), the owner's ``user_id`` and the list
-of individual expenses are dropped: the model does not need them and every
-extra field costs tokens.
-
-All numbers come from the services; nothing is computed here.
-"""
+"""Minimal tool results for the model."""
 
 from __future__ import annotations
 

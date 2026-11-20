@@ -1,4 +1,4 @@
-"""The five tools: schemas for the model, endpoints, minimal projections (requirements 2.2, 2.3, 2.5)."""
+"""The five tools: schemas for the model, endpoints, minimal projections."""
 
 import asyncio
 import json

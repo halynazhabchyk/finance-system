@@ -9,9 +9,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 os.environ["CONSUL_ENABLED"] = "false"
 
-VALID_TOKEN = "valid-token"
-EMAIL = "student@example.com"
-PASSWORD = "secret-password"
+from shared.security.testing import make_token  # noqa: E402
+
+VALID_TOKEN = make_token(preferred_username="student")
 
 
 @pytest.fixture
@@ -22,24 +22,15 @@ def received_texts() -> list[str]:
 
 @pytest.fixture
 def gateway(received_texts):
-    """Traefik stand-in: login of User Service + a real A2A agent at /agents/budget."""
+    """Traefik stand-in: a real A2A agent at /agents/budget."""
     import httpx
     from starlette.applications import Starlette
-    from starlette.requests import Request
-    from starlette.responses import JSONResponse
-    from starlette.routing import Mount, Route
+    from starlette.routing import Mount
 
     from a2a_chat.tests.fake_agent import create_text_agent
 
-    async def login(request: Request) -> JSONResponse:
-        form = await request.form()
-        if form.get("username") == EMAIL and form.get("password") == PASSWORD:
-            return JSONResponse({"access_token": VALID_TOKEN, "token_type": "bearer"})
-        return JSONResponse({"detail": "Incorrect email or password"}, status_code=401)
-
     app = Starlette(
         routes=[
-            Route("/api/users/auth/login", login, methods=["POST"]),
             Mount("/agents/budget", app=create_text_agent(received_texts, valid_token=VALID_TOKEN)),
         ]
     )

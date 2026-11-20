@@ -18,6 +18,9 @@ from app.api.routers import reports, system
 from app.workers.report_consumer import ReportEventConsumer
 from shared.web.errors import register_domain_error_handler
 from shared.web.openapi import install_public_openapi
+from shared.security.cors import install_cors
+from shared.security.openapi import swagger_ui_oauth_config
+from app.api.dependencies import SERVICE_SCOPES
 from shared.service_discovery.consul import ServiceConfig, service_registration
 
 
@@ -48,6 +51,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         root_path=os.getenv("PUBLIC_API_PREFIX", ""),
         root_path_in_servers=False,
+        swagger_ui_init_oauth=swagger_ui_oauth_config(SERVICE_SCOPES),
     )
     install_public_openapi(
         app,
@@ -58,4 +62,5 @@ def create_app() -> FastAPI:
     register_domain_error_handler(app)
     app.include_router(system.router)
     app.include_router(reports.router)
+    install_cors(app)
     return app

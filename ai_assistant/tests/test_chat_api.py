@@ -1,4 +1,4 @@
-"""POST /internal/assistant/chat with a scripted LLM and an in-memory API (requirement 2.6)."""
+"""POST /internal/assistant/chat with a scripted LLM and an in-memory API."""
 
 from datetime import date
 
@@ -145,3 +145,47 @@ def test_active_content_is_400_without_tokens(assistant, message):
     assert response.json()["guardrail"] == "active_content"
     assert llm.requests == []
     assert api.requests == []
+
+
+def test_token_of_another_service_is_401_and_model_is_not_called(assistant):
+    """The token must be issued for ai-assistant."""
+    from shared.security.testing import make_token
+
+    api = FakeFinanceApi()
+    llm = ScriptedLLMClient([])
+    token = make_token(api.user_id, audience=("budget-service",))
+
+    response = assistant(api, llm).post("/internal/assistant/chat", json={"message": "Привіт"}, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+    assert llm.requests == []
+    assert api.paths() == []  # rejected before any call to the services
+
+
+def test_keycloak_token_is_forwarded_to_the_services_unchanged(assistant):
+    """The same token reaches the services through the gateway."""
+    api = FakeFinanceApi()
+    api.add_budget("2026-11")
+    llm = ScriptedLLMClient([tool_call_response(("find_budget_by_period", {"year": 2026, "month": 11})), final_answer("Готово.")])
+
+    response = assistant(api, llm).post("/internal/assistant/chat", json={"message": "Мій бюджет на листопад?"}, headers=auth(api))
+
+    assert response.status_code == 200
+    assert {request.headers["authorization"] for request in api.requests} == {f"Bearer {api.token}"}
+
+
+def test_chat_without_assistant_chat_scope_is_403_and_model_is_not_called(assistant):
+    """Without assistant:chat nothing is forwarded."""
+    from shared.security.testing import make_token
+
+    api = FakeFinanceApi()
+    llm = ScriptedLLMClient([final_answer("never")])
+    client = assistant(api, llm)
+    token = make_token(api.user_id, scopes=("users:read", "budgets:read", "reports:read"))
+
+    response = client.post("/internal/assistant/chat", json={"message": "Привіт"}, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 403
+    assert response.headers["www-authenticate"] == 'Bearer error="insufficient_scope", scope="assistant:chat"'
+    assert llm.requests == []
+    assert api.paths() == []

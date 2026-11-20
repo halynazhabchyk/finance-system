@@ -1,9 +1,4 @@
-"""The function-calling loop: model -> tool calls -> results -> model ... -> final answer.
-
-The loop stops when the model answers without tool calls, or when a limit is
-reached (iterations, token budget). Limits are checked before every further
-model call, so an exhausted budget never triggers another paid request.
-"""
+"""The function-calling loop: model -> tool calls -> results -> model ... -> final answer."""
 
 from __future__ import annotations
 
@@ -115,7 +110,7 @@ class FunctionCallingLoop:
             for call in response.tool_calls:  # sequential: later calls may depend on earlier ones
                 execution = await self._executor.execute(call)
                 executions.append(execution)
-                # Every result is size-limited and marked as untrusted data before the model sees it.
+                # Results are size-limited and marked as untrusted data.
                 guarded = guard_tool_result(execution.result, self._limits.tool_result_max_chars)
                 results.append(ToolResult(call=call, content=guarded))
             conversation.append(ToolResultsMessage(results))
@@ -154,7 +149,7 @@ class FunctionCallingLoop:
         iterations: int,
         request_id: str,
     ) -> AgentRunResult:
-        # The answer may be rendered by a client: no markup, external images or script links.
+        # Strip markup, external images and script links from the answer.
         answer, removed = sanitize_model_answer(answer)
         if removed:
             logger.warning("model_answer_sanitized request_id=%s removed=%s", request_id, ",".join(removed))

@@ -162,7 +162,7 @@ def test_outbox_publisher_keeps_pending_when_broker_unavailable(monkeypatch):
     assert publisher.publish_pending_once() is False
     assert row.status == "PENDING"
     assert row.published_at is None
-    # The failure is recorded in a separate transaction (attempts + last_error).
+    # Failure is recorded in a separate transaction.
     assert len(sessions[0].executed) == 1
     assert sessions[0].commits == 1
 

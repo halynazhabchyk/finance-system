@@ -1,8 +1,4 @@
-"""Entry point of the MCP server.
-
-    python -m app.main                       # stdio (MCP Inspector, IDE); JWT in MCP_USER_JWT
-    MCP_TRANSPORT=streamable-http python -m app.main   # Docker; JWT in the Authorization header
-"""
+"""Entry point of the MCP server."""
 
 from __future__ import annotations
 
@@ -10,8 +6,7 @@ import logging
 import sys
 from pathlib import Path
 
-# Allows both `python -m app.main` (from mcp_server/) and `python mcp_server/app/main.py`
-# (how MCP Inspector starts a stdio server from the project root).
+# Allows running as a module or as a script (MCP Inspector).
 for path in (Path(__file__).resolve().parents[2], Path(__file__).resolve().parents[1]):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))

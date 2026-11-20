@@ -1,10 +1,4 @@
-"""Guardrail of level 3: tool results are delivered to the model as untrusted data.
-
-Category names, expense descriptions and service messages are written by users
-or services; a stored text like "ignore your rules and ..." must never become an
-instruction. Every result is wrapped in an envelope that says so; the system
-prompt refers to the same ``untrusted_data`` key.
-"""
+"""Guardrail of level 3: tool results are delivered to the model as untrusted data."""
 
 from __future__ import annotations
 

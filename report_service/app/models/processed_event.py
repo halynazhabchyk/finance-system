@@ -1,8 +1,4 @@
-"""Transactional Inbox record for events consumed by Report Service.
-
-A row is inserted in the same local transaction as the read-model change, so
-it exists only for events whose business operation was committed.
-"""
+"""Transactional Inbox record for events consumed by Report Service."""
 
 import uuid
 from datetime import datetime

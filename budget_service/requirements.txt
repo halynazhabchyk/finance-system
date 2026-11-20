@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-PyJWT
+PyJWT[crypto]
 sqlalchemy
 alembic
 psycopg[binary]

@@ -1,4 +1,4 @@
-"""Streamable HTTP transport (requirement 4.6): JWT from the header, health check, DNS-rebinding protection."""
+"""Streamable HTTP transport: JWT from the header, health check, DNS-rebinding protection."""
 
 import pytest
 from starlette.testclient import TestClient
@@ -62,7 +62,7 @@ def test_tool_call_uses_jwt_from_authorization_header(http, api):
 
 
 def test_http_request_without_jwt_ignores_the_stdio_token(http, api, monkeypatch):
-    # Even if MCP_USER_JWT is set in the container, a shared HTTP server must not act as that user.
+    # HTTP mode must ignore MCP_USER_JWT.
     monkeypatch.setenv("MCP_USER_JWT", api.token)
 
     response = http.post("/mcp", json=CALL, headers=HEADERS)

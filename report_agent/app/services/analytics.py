@@ -1,9 +1,4 @@
-"""Deterministic analytics over service data (no language model).
-
-Requirement 1.6: numbers are never computed by the LLM. Differences between
-months and limit overruns are derived here with ``Decimal`` from the amounts
-returned by Report Service and Budget Service.
-"""
+"""Deterministic analytics over service data (no language model)."""
 
 from __future__ import annotations
 

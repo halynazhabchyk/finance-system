@@ -5,12 +5,12 @@ import uuid
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from shared.errors import BusinessRuleError, ConflictError, NotFoundError
+from shared.errors import ConflictError, NotFoundError
 
-from app.core.security import hash_password
 from app.models import UserAccount
 from app.repositories import users as user_repository
-from app.schemas import UserCreate, UserUpdateName
+from app.schemas import UserUpdateName
+from app.services.provisioning import ProfileClaims
 
 
 def get_user_or_404(db: Session, user_id: uuid.UUID) -> UserAccount:
@@ -24,22 +24,24 @@ def list_users(db: Session, limit: int, offset: int) -> list[UserAccount]:
     return user_repository.get_all(db, limit=limit, offset=offset)
 
 
-def create_user(db: Session, payload: UserCreate) -> UserAccount:
-    email = str(payload.email).strip().lower()
-    if user_repository.get_by_email(db, email) is not None:
-        raise ConflictError("A user with this email already exists.")
+def get_or_create_profile(db: Session, claims: ProfileClaims) -> UserAccount:
+    """Return the profile of the token subject, creating it at the first sign-in."""
+    user = user_repository.get_by_id(db, claims.user_id)
+    if user is not None:
+        return user
+    if user_repository.get_by_email(db, claims.email) is not None:
+        # Email belongs to another profile; no automatic merge.
+        raise ConflictError("A profile with this email already exists under another identity.")
+    user = user_repository.create(db, user_id=claims.user_id, user_name=claims.user_name, email=claims.email)
     try:
-        password_hash = hash_password(payload.password)
-    except ValueError as error:
-        raise BusinessRuleError("Password cannot be processed.") from error
-
-    user = user_repository.create(
-        db,
-        user_name=payload.user_name,
-        email=email,
-        password_hash=password_hash,
-    )
-    _commit_or_raise_conflict(db)
+        db.commit()
+    except IntegrityError:
+        # Concurrent first request already created it.
+        db.rollback()
+        user = user_repository.get_by_id(db, claims.user_id)
+        if user is None:
+            raise ConflictError("The profile conflicts with existing data.")
+        return user
     db.refresh(user)
     return user
 

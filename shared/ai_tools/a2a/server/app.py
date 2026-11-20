@@ -29,8 +29,7 @@ def create_agent_app(
     verifier: TokenVerifier,
     service_config: ServiceConfig,
 ) -> Starlette:
-    """Tasks are kept in memory (``InMemoryTaskStore``): progress is delivered over one
-    streaming (SSE) call, so a caller never has to come back to the same instance."""
+    """Tasks are kept in memory (InMemoryTaskStore)"""
     handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=card)
 
     async def health(_: Request) -> JSONResponse:

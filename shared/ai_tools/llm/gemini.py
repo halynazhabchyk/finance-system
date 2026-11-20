@@ -1,9 +1,4 @@
-"""Google Gemini adapter of ``LLMClient`` (library ``google-genai``).
-
-This is the only module of the project that imports ``google.genai``.
-Automatic function calling of the SDK is disabled: tools are executed by our
-own loop, which applies whitelisting, validation and token limits.
-"""
+"""Google Gemini adapter of LLMClient (library google-genai)."""
 
 from __future__ import annotations
 
@@ -181,7 +176,7 @@ def _usage(metadata: types.GenerateContentResponseUsageMetadata | None) -> Token
     if metadata is None:
         return TokenUsage()
     input_tokens = (metadata.prompt_token_count or 0) + (metadata.tool_use_prompt_token_count or 0)
-    # Thinking tokens are billed as output, so they count against the output budget.
+    # Thinking tokens count as output.
     output_tokens = (metadata.candidates_token_count or 0) + (metadata.thoughts_token_count or 0)
     total = metadata.total_token_count or (input_tokens + output_tokens)
     return TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=total)

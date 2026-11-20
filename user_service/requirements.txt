@@ -6,6 +6,5 @@ alembic
 psycopg[binary]
 python-dotenv
 email-validator
-bcrypt
-PyJWT
+PyJWT[crypto]
 pytest

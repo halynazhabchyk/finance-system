@@ -43,15 +43,16 @@ def get_all(
 
 def create(
     db: Session,
+    *,
+    user_id: uuid.UUID,
     user_name: str,
     email: str,
-    password_hash: str,
 ) -> UserAccount:
-    """Create a new user."""
+    """Create a profile whose identifier is the subject (``sub``) issued by Keycloak."""
     user = UserAccount(
+        user_id=user_id,
         user_name=user_name.strip(),
         email=email.strip().lower(),
-        password_hash=password_hash,
     )
 
     db.add(user)

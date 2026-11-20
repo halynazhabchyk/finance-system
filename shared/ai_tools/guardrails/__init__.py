@@ -1,4 +1,4 @@
-"""Guardrails of function calling (requirement 3)."""
+"""Guardrails of function calling."""
 
 from shared.ai_tools.guardrails.data_marking import UNTRUSTED_DATA_KEY, guard_tool_result, mark_as_untrusted_data
 from shared.ai_tools.guardrails.errors import GuardrailViolation

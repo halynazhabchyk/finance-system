@@ -1,4 +1,4 @@
-"""GET /internal/budgets?period=YYYY-MM – lookup of the budget of one calendar month (ЛР №4, п. 0.1)."""
+"""GET /internal/budgets?period=YYYY-MM – lookup of the budget of one calendar month."""
 
 import uuid
 from datetime import date

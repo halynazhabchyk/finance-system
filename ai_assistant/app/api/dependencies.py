@@ -2,38 +2,29 @@
 
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, Security
 
 from shared.ai_tools.gateway.factory import gateway_client_factory
 from shared.ai_tools.llm.factory import create_llm_client
+from shared.security.fastapi import bearer_token_dependency
+from shared.security.jwt import VerifiedToken
+from shared.security.openapi import authorization_code_scheme
 
 from app.core.config import get_settings
 from app.services.chat_service import AssistantChatService
 
-# Same scheme as User/Budget/Report Service: Swagger UI asks for login and password,
-# obtains the JWT from User Service and sends it as "Authorization: Bearer <token>".
-# auto_error=False keeps our own 401 response below.
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=os.getenv("PUBLIC_AUTH_URL", "/api/users/auth/login"),
-    auto_error=False,
-    description="Log in with User Service credentials; the access token is sent as Bearer.",
-)
+# Swagger UI signs in through Keycloak (Authorization Code + PKCE).
+SERVICE_SCOPES = ["assistant:chat"]
+oauth2_scheme = authorization_code_scheme(SERVICE_SCOPES, auto_error=False)
+verified_token = bearer_token_dependency(oauth2_scheme)
 
 
-def get_access_token(token: Annotated[str | None, Depends(oauth2_scheme)]) -> str:
-    """The raw JWT of the caller; it is forwarded to the services and never logged."""
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Bearer access token is required.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return token
+def get_access_token(token: Annotated[VerifiedToken, Security(verified_token, scopes=["assistant:chat"])]) -> str:
+    """Verified token of the caller, forwarded unchanged."""
+    return token.raw
 
 
 @lru_cache

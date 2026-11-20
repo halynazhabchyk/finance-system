@@ -1,13 +1,4 @@
-"""Where the user's JWT comes from (requirement 4.7).
-
-* stdio – one local user: the token is passed in ``MCP_USER_JWT`` when the
-  client (MCP Inspector, IDE) starts the server process;
-* Streamable HTTP – every request carries ``Authorization: Bearer <JWT>``;
-  the server is shared by many users, so a token from the environment is
-  never used there.
-
-The token is only forwarded to the REST API, where User Service verifies it.
-"""
+"""Where the user's JWT comes from."""
 
 from __future__ import annotations
 

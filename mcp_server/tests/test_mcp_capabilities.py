@@ -1,4 +1,4 @@
-"""MCP tools, resources and prompts through the SDK client (requirements 4.3-4.5, 4.7)."""
+"""MCP tools, resources and prompts through the SDK client."""
 
 import asyncio
 import json
@@ -15,7 +15,7 @@ def with_client(server, scenario):
     return asyncio.run(run())
 
 
-# --- discovery --------------------------------------------------------------
+# --- discovery ---
 
 
 def test_exactly_the_five_whitelisted_tools_are_listed(mcp_server):
@@ -64,7 +64,7 @@ def test_resources_and_prompts_are_listed(mcp_server):
     }
 
 
-# --- tools ------------------------------------------------------------------
+# --- tools ---
 
 
 def test_successful_tool_call_returns_marked_structured_result(mcp_server, stdio_user):
@@ -144,7 +144,7 @@ def test_missing_jwt_is_reported(mcp_server, api, monkeypatch):
     assert api.requests == []
 
 
-# --- resources --------------------------------------------------------------
+# --- resources ---
 
 
 def _resource_json(result):
@@ -195,7 +195,7 @@ def test_resource_with_invalid_month_is_rejected_without_api_call(mcp_server, st
     assert stdio_user.requests == []
 
 
-# --- prompts ----------------------------------------------------------------
+# --- prompts ---
 
 
 def test_prompts_render_instructions_with_validated_arguments(mcp_server):

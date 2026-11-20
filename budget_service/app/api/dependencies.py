@@ -1,53 +1,29 @@
+"""FastAPI dependencies: database session and the authenticated user."""
+
 from collections.abc import Generator
-import os
-from pathlib import Path
 from typing import Annotated
 import uuid
 
-from dotenv import load_dotenv
-import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, Security
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from shared.clients.user_service import validate_user_token
+from shared.security.fastapi import bearer_token_dependency
+from shared.security.jwt import VerifiedToken
+from shared.security.openapi import authorization_code_scheme
 
 
-SERVICE_ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(SERVICE_ROOT / ".env")
-
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl=os.getenv("PUBLIC_AUTH_URL", "/api/users/auth/login")
-)
+# Scopes shown in the Swagger Authorize dialog.
+SERVICE_SCOPES = ["budgets:read", "budgets:write"]
+oauth2_scheme = authorization_code_scheme(SERVICE_SCOPES, auto_error=False)
+verified_token = bearer_token_dependency(oauth2_scheme)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> uuid.UUID:
-    """Validate the token and subject through the User Service."""
-    try:
-        subject = jwt.decode(
-            token,
-            os.getenv("JWT_SECRET_KEY", ""),
-            algorithms=[os.getenv("JWT_ALGORITHM", "HS256")],
-            options={"verify_signature": False},
-        ).get("sub")
-    except (jwt.InvalidTokenError, TypeError, ValueError) as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from error
-
-    try:
-        user_id = uuid.UUID(subject)
-    except (TypeError, ValueError) as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token subject.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from error
-    validate_user_token(token, user_id)
-    return user_id
+def get_current_user(token: Annotated[VerifiedToken, Security(verified_token)]) -> uuid.UUID:
+    """user_id = sub of the verified token; User Service rejects blocked accounts."""
+    validate_user_token(token.raw, token.user_id)
+    return token.user_id
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -62,3 +38,6 @@ def get_db() -> Generator[Session, None, None]:
 # Shortcuts for route signatures.
 DatabaseSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[uuid.UUID, Depends(get_current_user)]
+# Scope is checked before User Service is called.
+BudgetReader = Annotated[uuid.UUID, Security(get_current_user, scopes=["budgets:read"])]
+BudgetWriter = Annotated[uuid.UUID, Security(get_current_user, scopes=["budgets:write"])]

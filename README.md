@@ -48,12 +48,14 @@ Budget Service записує події в таблицю `outbox_events` у т
 ### 1. Підготовка змінних середовища
 
 Створіть локальні файли `.env`, `user_service/.env`,
-`budget_service/.env` і `report_service/.env` на основі параметрів
-конфігурації. Вкажіть власні паролі та секрети. Ці файли не можна
-додавати до Git.
+`budget_service/.env` і `report_service/.env` з відповідних `.env.example`.
+Вкажіть власні паролі та секрети. Ці файли не можна додавати до Git.
 
-Для захищених операцій встановіть однаковий `JWT_SECRET_KEY` довжиною
-щонайменше 32 символи в `user_service/.env` і `budget_service/.env`.
+Автентифікація (ЛР №5) – Keycloak (realm `finance`, `keycloak/realm-export.json`):
+у кореневому `.env` задайте `KC_BOOTSTRAP_ADMIN_PASSWORD`, `KC_DB_PASSWORD` і,
+для входу через Google, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. Сервіси
+перевіряють RS256-токени Keycloak локально (JWKS); спільного `JWT_SECRET_KEY`
+більше немає.
 
 ### 2. Запуск усієї системи
 
@@ -72,12 +74,13 @@ docker compose up --build
 | `http://localhost:8500` | Consul UI |
 | `http://localhost:15672` | RabbitMQ Management UI |
 | `http://localhost:8010/docs` | Scheduler API |
+| `http://localhost:8080/auth/admin/` | Keycloak Admin Console (realm `finance`) |
 
 ### 3. API через Gateway
 
 ```text
-/api/users/*        -> User Service
-/api/users/auth/*   -> User Service authentication
+/api/users/{id}, /api/users/{id}/name -> User Service (власний профіль)
+/auth/*             -> Keycloak (вхід, токени, JWKS)
 /api/budgets/*      -> Budget Service
 /api/reports/*      -> Report Service
 /api/assistant/*    -> AI Assistant (ЛР №4)
@@ -89,7 +92,7 @@ docker compose up --build
 Внутрішні маршрути сервісів доступні лише в Docker-мережі:
 
 ```text
-User Service:   /internal/auth, /internal/users, /internal/health
+User Service:   /internal/users, /internal/health
 Budget Service: /internal/budgets, /internal/health
 Report Service: /internal/reports/monthly/{year}/{month},
                 /internal/reports/annual/{year}, /internal/health
@@ -190,10 +193,21 @@ docker compose up -d report-service
 Потрібна змінна в кореневому `.env`: `LLM_API_KEY` (ключ Google Gemini).
 Необов'язкові: `LLM_MODEL` (за замовчуванням `gemini-3.5-flash`) і `LLM_THINKING_LEVEL`.
 
+Токен користувача (ЛР №5): відкрийте Swagger, наприклад
+`http://localhost:8080/api/assistant/docs` → **Authorize** → вхід у Keycloak
+(Authorization Code + PKCE, логін/пароль або Google). Позначте потрібні scopes:
+`budgets:write` і `users:write` не видаються за замовчуванням. Скопіюйте токен
+із будь-якого запиту (Copy as curl). Строк дії – 15 хв.
+
+| Scope | Що дозволяє |
+| --- | --- |
+| `users:read` / `users:write` | читати / змінювати власний профіль |
+| `budgets:read` / `budgets:write` | читати / змінювати бюджети, категорії, витрати |
+| `reports:read` | місячні та річні звіти |
+| `assistant:chat` | `POST /api/assistant/chat` |
+
 ```powershell
-# JWT користувача
-$token = (Invoke-RestMethod -Method Post http://localhost:8080/api/users/auth/login `
-  -ContentType "application/x-www-form-urlencoded" -Body "username=<email>&password=<password>").access_token
+$token = "<access token з Swagger>"
 
 # Запит до асистента
 Invoke-RestMethod -Method Post http://localhost:8080/api/assistant/chat -Headers @{ Authorization = "Bearer $token" } `
@@ -203,7 +217,8 @@ Invoke-RestMethod -Method Post http://localhost:8080/api/assistant/chat -Headers
 $env:MCP_USER_JWT = $token; $env:GATEWAY_URL = "http://localhost:8080"
 npx @modelcontextprotocol/inspector .\.venv\Scripts\python.exe mcp_server\app\main.py
 
-# Чат з A2A-агентом природною мовою
+# Чат з A2A-агентом природною мовою (токен – зі змінної або прихованим вводом)
+$env:A2A_ACCESS_TOKEN = $token
 .\.venv\Scripts\python.exe -m a2a_chat                  # budget-agent (producer)
 .\.venv\Scripts\python.exe -m a2a_chat --agent report   # report-agent (consumer)
 ```

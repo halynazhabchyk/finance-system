@@ -1,13 +1,4 @@
-"""REST client of the public API (Traefik) acting on behalf of one user.
-
-Every request carries the user's JWT; ``user_id`` is never a parameter – the
-services take it from the verified token (Database per Service is respected:
-the AI components never touch a database).
-
-The client exposes only the operations the AI tools and MCP resources need:
-reading budgets/reports and creating categories/expenses. It deliberately has
-no update/delete methods.
-"""
+"""REST client of the public API (Traefik) acting on behalf of one user."""
 
 from __future__ import annotations
 
@@ -56,14 +47,10 @@ class FinanceApiClient:
     async def aclose(self) -> None:
         await self._http.aclose()
 
-    # --- authentication -------------------------------------------------
+    # --- authentication ---
 
     async def verify_current_user(self) -> uuid.UUID:
-        """Check the JWT with User Service through the gateway and return ``user_id``.
-
-        The subject is read without verifying the signature only to build the
-        URL; User Service then verifies signature, expiry and ownership.
-        """
+        """Check the JWT with User Service through the gateway and return user_id."""
         try:
             subject = jwt.decode(self._access_token, options={"verify_signature": False}).get("sub")
             user_id = uuid.UUID(str(subject))
@@ -79,7 +66,7 @@ class FinanceApiClient:
             raise AccountBlocked("The user account is blocked.")
         return user_id
 
-    # --- budgets --------------------------------------------------------
+    # --- budgets ---
 
     async def find_budgets_by_period(self, period: str) -> list[dict[str, Any]]:
         return await self._request("GET", "/api/budgets", params={"period": period})
@@ -93,7 +80,7 @@ class FinanceApiClient:
     async def create_expense(self, budget_id: uuid.UUID, payload: dict[str, Any]) -> dict[str, Any]:
         return await self._request("POST", f"/api/budgets/{budget_id}/expenses", json=payload)
 
-    # --- reports --------------------------------------------------------
+    # --- reports ---
 
     async def get_monthly_report(self, year: int, month: int) -> dict[str, Any]:
         return await self._request("GET", f"/api/reports/monthly/{year}/{month}")
@@ -101,7 +88,7 @@ class FinanceApiClient:
     async def get_annual_report(self, year: int) -> dict[str, Any]:
         return await self._request("GET", f"/api/reports/annual/{year}")
 
-    # --- transport ------------------------------------------------------
+    # --- transport ---
 
     async def _request(
         self,
@@ -123,4 +110,4 @@ class FinanceApiClient:
             body: Any = response.json()
         except ValueError:
             body = None
-        raise GatewayError.from_response(response.status_code, body)
+        raise GatewayError.from_response(response.status_code, body, response.headers.get("WWW-Authenticate"))

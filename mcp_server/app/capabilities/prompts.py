@@ -1,9 +1,4 @@
-"""MCP prompts – ready instructions for typical budget conversations (requirement 4.5).
-
-Prompt arguments come from the MCP client as strings; they are validated by
-the shared Pydantic types (ranges, amounts, names without injections) before
-being inserted into the text.
-"""
+"""MCP prompts – ready instructions for typical budget conversations."""
 
 from __future__ import annotations
 

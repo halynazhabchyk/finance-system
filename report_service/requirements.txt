@@ -5,6 +5,6 @@ alembic
 psycopg[binary]
 python-dotenv
 pytest
-PyJWT
+PyJWT[crypto]
 httpx
 pika

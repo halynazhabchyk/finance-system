@@ -1,10 +1,4 @@
-"""Guardrail of level 3: a basic filter of known prompt-injection patterns.
-
-This is a first line of defence, not a complete one. The real protection is
-structural: the model has only five tools, no tool can delete or change data,
-``user_id`` comes only from the JWT, and tool results are marked as data.
-The filter rejects obvious attempts early (no tokens spent) and logs them.
-"""
+"""Guardrail of level 3: a basic filter of known prompt-injection patterns."""
 
 from __future__ import annotations
 
@@ -38,6 +32,11 @@ INJECTION_RULES: tuple[InjectionRule, ...] = (
         r"(ігноруй|проігноруй|ігнорувати|забудь|відкинь|не\s+зважай\s+на|обійди)\w*.{0,40}(попередн|всі|усі|свої|системн|наведен)\w*.{0,20}(інструкц|правил|вказівк|промпт)\w*",
     ),
     _rule(
+        "override_instructions_ru",
+        r"(игнорируй|проигнорируй|игнорировать|забудь|отбрось|не\s+обращай\s+внимания\s+на|обойди)\w*.{0,40}"
+        r"(предыдущ|все|свои|системн|приведенн)\w*.{0,20}(инструкц|правил|указани|промпт)\w*",
+    ),
+    _rule(
         "reveal_hidden_data",
         r"\b(reveal|show|print|display|repeat|output|leak|tell\s+me)\b.{0,40}\b(hidden\s+(instructions?|prompt|rules)|your\s+(instructions?|prompt|rules))\b",
     ),
@@ -59,7 +58,7 @@ INJECTION_RULES: tuple[InjectionRule, ...] = (
     _rule("fake_role_markers", r"(<\s*/?\s*(system|assistant|instructions?)\s*>|\[\s*(system|inst)\s*\]|^\s*#{2,}\s*system\b)"),
 )
 
-_INVISIBLE = {"Cf"}  # zero-width and bidi control characters used to hide payloads
+_INVISIBLE = {"Cf"}  # zero-width and bidi characters
 
 
 def normalize(text: str) -> str:
@@ -75,10 +74,7 @@ def find_injection_rules(text: str) -> list[str]:
 
 
 def ensure_no_prompt_injection(text: str, *, source: str) -> None:
-    """Reject ``text`` from ``source`` (user_message, a2a_message, ...) if it matches a known pattern.
-
-    Only rule ids and the length are logged – never the text itself.
-    """
+    """Reject text from source (user_message, a2a_message, ...) if it matches a known pattern."""
     matched = find_injection_rules(text)
     if matched:
         logger.warning(

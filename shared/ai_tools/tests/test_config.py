@@ -67,7 +67,7 @@ def test_factory_builds_gemini_adapter_and_rejects_unknown_provider(llm_env, mon
 
 
 def test_only_the_adapter_imports_the_provider_sdk():
-    """Provider-specific code is isolated in llm/gemini.py (requirement 1.2)."""
+    """Provider-specific code is isolated in llm/gemini.py."""
     from pathlib import Path
 
     package = Path(__file__).resolve().parents[1]

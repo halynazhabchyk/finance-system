@@ -1,9 +1,4 @@
-"""Use cases for budget expenses.
-
-Creating an expense is step T1 of the "create expense" SAGA: the expense
-(PENDING), the saga state and the ExpenseCreated outbox row are committed
-in one local transaction.
-"""
+"""Use cases for budget expenses."""
 
 from __future__ import annotations
 

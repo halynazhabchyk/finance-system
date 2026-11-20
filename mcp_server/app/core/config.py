@@ -36,7 +36,7 @@ class McpSettings:
             http_path=os.getenv("MCP_HTTP_PATH", "/mcp"),
             gateway=GatewaySettings.from_env(),
             result_max_chars=AgentLimits.from_env().tool_result_max_chars,
-            # DNS-rebinding protection of Streamable HTTP: requests come through Traefik.
+            # DNS-rebinding protection (requests come through Traefik).
             allowed_hosts=_csv("MCP_ALLOWED_HOSTS", "localhost:*,127.0.0.1:*,traefik,traefik:*,mcp-server:*"),
             allowed_origins=_csv("MCP_ALLOWED_ORIGINS", "http://localhost:*,http://127.0.0.1:*"),
         )

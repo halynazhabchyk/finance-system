@@ -1,9 +1,4 @@
-"""An in-process budget-agent for report-agent tests.
-
-It is a real A2A server (shared Agent Card builder, SkillExecutor, JWT middleware)
-with a simplified ``register_expense`` skill working against ``FakeFinanceApi``:
-it creates the expense, polls the SAGA state and ends COMPLETED or FAILED.
-"""
+"""An in-process budget-agent for report-agent tests."""
 
 from __future__ import annotations
 

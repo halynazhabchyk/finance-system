@@ -80,11 +80,7 @@ def declare_simple_topology(
     exchange: str,
     routing_keys: list[str],
 ) -> None:
-    """Durable queue bound to one topic exchange, without retry/DLQ bindings.
-
-    Used by consumers whose failures are retried with nack/requeue, so they do
-    not add more "#" bindings to the shared retry and dead-letter exchanges.
-    """
+    """Durable queue bound to one topic exchange, without retry/DLQ bindings."""
     channel.exchange_declare(exchange=exchange, exchange_type="topic", durable=True)
     channel.queue_declare(queue=queue_name, durable=True)
     for routing_key in routing_keys:

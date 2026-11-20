@@ -1,9 +1,8 @@
-"""create user accounts table
+"""create user accounts table.
 
 Revision ID: f6c8ebe9976c
 Revises: 
 Create Date: 2026-10-12 19:20:12.804067
-
 """
 from typing import Sequence, Union
 

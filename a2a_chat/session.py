@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from shared.ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
 
+from a2a_chat.auth import REJECTED
 from a2a_chat.config import AgentTarget
 from a2a_chat.console import HELP, Console
 from a2a_chat.conversation import Conversation
@@ -61,6 +62,8 @@ class ChatSession:
         except RemoteAgentError as error:
             self._conversation.reset()
             self._console.error(str(error))
+            if "401" in str(error):  # token rejected or expired
+                self._console.error(REJECTED)
             return
         self._console.result(result)
         self._conversation.record(message, result.state, result.message)

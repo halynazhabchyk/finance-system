@@ -15,7 +15,28 @@ http:
       priority: 1000
       service: api@internal
 
+    keycloak:
+      rule: "PathPrefix(`/auth`)"
+      entryPoints:
+        - web
+      priority: 50
+      service: keycloak
+
+  services:
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
+
   middlewares:
     gateway-docs-path:
       replacePath:
         path: /docs
+
+    # Attached to the web entrypoint; CORS stays in the services.
+    security-headers:
+      headers:
+        contentTypeNosniff: true
+        # SAMEORIGIN, not DENY: the Keycloak admin console embeds its own pages in iframes.
+        customFrameOptionsValue: "SAMEORIGIN"
+        referrerPolicy: "no-referrer"

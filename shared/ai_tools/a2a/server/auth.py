@@ -1,8 +1,4 @@
-"""JWT check of A2A calls before a task is created (guardrail of requirement 5.8).
-
-The Agent Card stays public (discovery); the JSON-RPC endpoint requires
-``Authorization: Bearer <JWT>``, verified through User Service via the gateway.
-"""
+"""JWT check of A2A calls before a task is created."""
 
 from __future__ import annotations
 

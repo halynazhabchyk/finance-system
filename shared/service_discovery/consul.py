@@ -216,9 +216,7 @@ def discover_service(
     return ConsulClient(config).discover(service_name)
 
 
-# ЛР №4: gateway routes of the MCP server and the A2A agents. They are not
-# "/api/X -> /internal/X" mappings: the MCP endpoint keeps its path, the agents'
-# prefix is stripped so the Agent Card is served at /.well-known/agent-card.json.
+# Routes of the MCP server (path kept) and A2A agents (prefix stripped).
 AI_COMPONENT_ROUTES: dict[str, tuple[str, bool]] = {
     "mcp-server": ("/mcp", False),
     "budget-agent": ("/agents/budget", True),
@@ -241,6 +239,12 @@ def _ai_component_tags(service_name: str, public_prefix: str, strip_prefix: bool
             ]
         )
     return tags
+
+
+# Only the user's own profile is public; list, /block and /activate stay internal.
+PUBLIC_ROUTE_RULES: dict[str, str] = {
+    "user-service": "PathRegexp(`^/api/users/[0-9a-fA-F-]{36}(/name)?$`)",
+}
 
 
 def default_traefik_tags(service_name: str) -> list[str]:
@@ -273,27 +277,16 @@ def default_traefik_tags(service_name: str) -> list[str]:
     router = service_name
     strip_middleware = f"{service_name}-strip"
     add_middleware = f"{service_name}-internal"
+    rule = PUBLIC_ROUTE_RULES.get(service_name, f"PathPrefix(`{public_prefix}`)")
     tags = [
         "traefik.enable=true",
-        f"traefik.http.routers.{router}.rule=PathPrefix(`{public_prefix}`)",
+        f"traefik.http.routers.{router}.rule={rule}",
         f"traefik.http.routers.{router}.entrypoints=web",
         f"traefik.http.routers.{router}.service={service_name}",
         f"traefik.http.routers.{router}.middlewares={strip_middleware},{add_middleware}",
         f"traefik.http.middlewares.{strip_middleware}.stripprefix.prefixes={public_prefix}",
         f"traefik.http.middlewares.{add_middleware}.addprefix.prefix={internal_prefix}",
     ]
-    if service_name == "user-service":
-        tags.extend(
-            [
-                "traefik.http.routers.user-auth.rule=PathPrefix(`/api/users/auth`)",
-                "traefik.http.routers.user-auth.priority=100",
-                "traefik.http.routers.user-auth.entrypoints=web",
-                "traefik.http.routers.user-auth.service=user-service",
-                "traefik.http.routers.user-auth.middlewares=user-auth-strip,user-auth-internal",
-                "traefik.http.middlewares.user-auth-strip.stripprefix.prefixes=/api/users/auth",
-                "traefik.http.middlewares.user-auth-internal.addprefix.prefix=/internal/auth",
-            ]
-        )
     tags.extend(
         [
             f"traefik.http.routers.{service_name}-docs.rule=PathPrefix(`{public_prefix}/docs`)",

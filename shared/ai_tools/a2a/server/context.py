@@ -1,5 +1,4 @@
-"""``SkillContext`` – what a skill handler gets: the request, an API client with the
-user's JWT and the controls of the A2A task (state changes are logged with task_id)."""
+"""SkillContext: what a skill handler gets (request, API client, task controls)."""
 
 from __future__ import annotations
 

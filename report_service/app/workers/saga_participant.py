@@ -1,8 +1,4 @@
-"""Report Service as the second participant of the "create expense" SAGA.
-
-It applies ExpenseCreated (T2) and replies with ExpenseProcessed; it applies
-ExpenseCancelled from Budget Service as its compensation (CT2).
-"""
+"""Report Service as the second participant of the "create expense" SAGA."""
 
 from __future__ import annotations
 
@@ -13,8 +9,7 @@ from shared.contracts.events import new_event
 
 SAGA_STEP_EVENT = "ExpenseCreated"
 SAGA_REPLY_EVENT = "ExpenseProcessed"
-# Fixed namespace: the reply event_id must stay the same for one saga, so
-# Budget Service can detect a repeated reply. Do not change it.
+# Fixed namespace: one saga always gets the same reply event_id. Do not change.
 SAGA_REPLY_NAMESPACE = uuid.UUID("6f1c2d3e-4b5a-4c7d-8e9f-0a1b2c3d4e5f")
 
 
@@ -36,11 +31,7 @@ def is_saga_step(event: dict) -> bool:
 
 
 def raise_if_failure_simulated(event: dict) -> None:
-    """Lab scenario B: fail after the read-model write but before COMMIT.
-
-    Only the SAGA step fails, so compensation (ExpenseCancelled) still
-    gets through while the simulation is on.
-    """
+    """Lab scenario B: fail after the read-model write but before COMMIT."""
     if is_saga_step(event) and processing_failure_simulated():
         raise SimulatedProcessingError(
             f"Simulated failure while processing {event['event_type']} "

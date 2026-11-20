@@ -43,13 +43,7 @@ class TokenUsage:
 
 @dataclass(frozen=True)
 class LLMResponse:
-    """One answer of the model: final text and/or tool calls.
-
-    ``provider_turn`` is the provider's own representation of the model
-    message. The adapter puts it back into the history unchanged (Gemini
-    requires e.g. ``thought_signature`` to survive between calls); other code
-    must treat it as opaque.
-    """
+    """One answer of the model: final text and/or tool calls."""
 
     text: str | None
     tool_calls: list[ToolCall] = field(default_factory=list)
