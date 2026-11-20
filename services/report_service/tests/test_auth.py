@@ -4,7 +4,7 @@ import uuid
 from types import SimpleNamespace
 
 import pytest
-from fastapi import HTTPException
+from shared.errors import PermissionDeniedError
 from fastapi.testclient import TestClient
 
 from shared.security.testing import make_token, make_verifier
@@ -77,7 +77,7 @@ def test_report_is_built_for_the_token_subject_only(api, monkeypatch):
 
 
 def test_blocked_account_is_403(api):
-    api.user_service_error = HTTPException(status_code=403, detail="The user account is not allowed to use the service.")
+    api.user_service_error = PermissionDeniedError("The user account is not allowed to use the service.")
 
     assert api.client.get("/internal/reports/annual/2026", headers=bearer(make_token())).status_code == 403
 

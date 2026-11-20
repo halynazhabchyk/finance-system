@@ -4,7 +4,7 @@ import uuid
 from types import SimpleNamespace
 
 import pytest
-from fastapi import HTTPException
+from shared.errors import PermissionDeniedError
 from fastapi.testclient import TestClient
 
 from shared.security.testing import make_token, make_verifier
@@ -98,7 +98,7 @@ def test_another_users_budget_is_404(api, monkeypatch):
 
 
 def test_blocked_account_reported_by_user_service_is_403(api):
-    api.user_service_error = HTTPException(status_code=403, detail="The user account is not allowed to use the service.")
+    api.user_service_error = PermissionDeniedError("The user account is not allowed to use the service.")
 
     response = api.client.get("/internal/budgets", headers=bearer(make_token()))
 
