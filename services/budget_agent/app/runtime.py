@@ -7,7 +7,8 @@ import httpx
 from starlette.applications import Starlette
 
 from ai_tools.a2a.server import create_agent_app
-from ai_tools.a2a.server.wiring import configure_logging, jwt_verifier, lazy_llm_factory
+from ai_tools.a2a.server.wiring import jwt_verifier, lazy_llm_factory
+from shared.log import configure_logging
 from ai_tools.gateway.factory import gateway_client_factory
 from ai_tools.llm import LLMClient
 from shared.service_discovery.consul import ServiceConfig

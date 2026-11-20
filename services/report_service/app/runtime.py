@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import logging
 import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
+from shared.log import configure_logging
 
 from app.api.routers import reports, system
 from app.workers.report_consumer import ReportEventConsumer
@@ -16,14 +17,6 @@ from shared.security.cors import install_cors
 from shared.security.openapi import swagger_ui_oauth_config
 from app.api.dependencies import SERVICE_SCOPES
 from shared.service_discovery.consul import ServiceConfig, service_registration
-
-
-def configure_logging() -> None:
-    """Root handler so shared.messaging INFO logs (receive/retry/DLQ) are visible."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
 
 
 def create_app() -> FastAPI:

@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import logging
 import os
 import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
+from shared.log import configure_logging
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.routers import budgets, categories, expenses, system
@@ -20,14 +21,6 @@ from app.workers.outbox_publisher import OutboxPublisher
 from app.workers.saga_dlq_consumer import SagaDlqConsumer
 from app.workers.saga_reply_consumer import SagaReplyConsumer
 from app.workers.saga_timeout_watcher import SagaTimeoutWatcher
-
-
-def configure_logging() -> None:
-    """Root handler so shared.messaging INFO logs (receive/retry/DLQ) are visible."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
 
 
 def create_app() -> FastAPI:

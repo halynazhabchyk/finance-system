@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from functools import lru_cache
 
@@ -13,10 +12,6 @@ from ai_tools.llm import LLMClient
 from ai_tools.llm.factory import create_llm_client
 
 LLMFactory = Callable[[], LLMClient | None]
-
-
-def configure_logging() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 def lazy_llm_factory(settings: LLMSettings | None, override: LLMClient | None = None) -> LLMFactory:

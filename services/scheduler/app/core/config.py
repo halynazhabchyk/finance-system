@@ -1,4 +1,7 @@
-"""Scheduler configuration loaded from environment variables."""
+"""Scheduler configuration loaded from environment variables.
+
+RabbitMQ URL, exchange and publish retries are read by shared.messaging itself.
+"""
 
 from __future__ import annotations
 
@@ -13,9 +16,6 @@ class SchedulerConfig:
     daily_time: str
     monthly_time: str
     timezone: str
-    rabbitmq_url: str
-    rabbitmq_exchange: str
-    rabbitmq_publish_retries: int
     rabbitmq_reconnect_interval_seconds: float
 
     @classmethod
@@ -26,18 +26,5 @@ class SchedulerConfig:
             daily_time=os.getenv("SCHEDULER_DAILY_TIME", "23:00"),
             monthly_time=os.getenv("SCHEDULER_MONTHLY_TIME", "23:30"),
             timezone=os.getenv("SCHEDULER_TIMEZONE", "Europe/Kyiv"),
-            rabbitmq_url=os.getenv(
-                "RABBITMQ_URL",
-                "amqp://guest:guest@rabbitmq:5672/%2F",
-            ),
-            rabbitmq_exchange=os.getenv(
-                "RABBITMQ_EXCHANGE",
-                "finance.events",
-            ),
-            rabbitmq_publish_retries=int(
-                os.getenv("RABBITMQ_PUBLISH_RETRIES", "3")
-            ),
-            rabbitmq_reconnect_interval_seconds=float(
-                os.getenv("RABBITMQ_RECONNECT_INTERVAL_SECONDS", "5")
-            ),
+            rabbitmq_reconnect_interval_seconds=float(os.getenv("RABBITMQ_RECONNECT_INTERVAL_SECONDS", "5")),
         )

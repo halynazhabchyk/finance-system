@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import sys
 from pathlib import Path
 
@@ -13,6 +12,7 @@ if _SERVICE_ROOT not in sys.path:
 
 import uvicorn
 
+from shared.log import configure_logging
 from shared.service_discovery.consul import ServiceConfig, service_registration
 
 from app.core.config import McpSettings
@@ -27,11 +27,7 @@ SERVICE_NAME = "mcp-server"
 
 def main() -> None:
     # stdout is the protocol channel of the stdio transport: logs go to stderr.
-    logging.basicConfig(
-        level=logging.INFO,
-        stream=sys.stderr,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    configure_logging(stream=sys.stderr)
     settings = McpSettings.from_env()
     server = build_server(McpDependencies(settings, gateway_client_factory(settings.gateway)))
 

@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from shared.log import configure_logging
 from shared.service_discovery.consul import ServiceConfig, service_registration
 
 from app.api.routers.system import create_router
@@ -20,9 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
+    configure_logging()
     config = SchedulerConfig.from_env()
     readiness = Readiness()
-    publisher = EventPublisher(config)
+    publisher = EventPublisher()
     report_scheduler = ReportScheduler(
         publisher,
         config.timezone,

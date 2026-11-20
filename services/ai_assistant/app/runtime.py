@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import logging
 import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
+from shared.log import configure_logging
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.routers import chat, system
@@ -18,13 +19,6 @@ from app.api.dependencies import SERVICE_SCOPES
 
 SERVICE_NAME = "ai-assistant"
 SERVICE_PORT = 8020
-
-
-def configure_logging() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
 
 
 def create_app() -> FastAPI:

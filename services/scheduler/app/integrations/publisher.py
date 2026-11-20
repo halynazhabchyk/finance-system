@@ -1,88 +1,51 @@
-"""RabbitMQ publisher for report update events."""
+"""Async adapter over shared.messaging (pika) for the APScheduler jobs.
+
+publish_event is blocking and keeps its RabbitMQ connection per thread, so every call
+runs in one dedicated thread: the connection is reused and the event loop is not blocked.
+"""
 
 from __future__ import annotations
 
 import asyncio
-import json
-import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
-import aio_pika
-from aio_pika import DeliveryMode, ExchangeType, Message
+import pika
 
-from app.core.config import SchedulerConfig
-
-logger = logging.getLogger(__name__)
+from shared.messaging import RabbitMQError, RabbitMQPublishError, publish_event
+from shared.messaging.connection import discard_publisher_connection, publisher_connection
 
 
 class EventPublisher:
-    def __init__(self, config: SchedulerConfig):
-        self._config = config
-        self._connection: aio_pika.abc.AbstractRobustConnection | None = None
-        self._channel: aio_pika.abc.AbstractRobustChannel | None = None
-        self._exchange: aio_pika.abc.AbstractExchange | None = None
+    def __init__(self) -> None:
+        self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="rabbitmq-publisher")
+        self._available = False
 
     @property
     def available(self) -> bool:
-        return bool(
-            self._connection
-            and not self._connection.is_closed
-            and self._channel
-            and not self._channel.is_closed
-        )
+        return self._available
 
     async def connect(self) -> None:
-        last_error: Exception | None = None
-        for attempt in range(1, self._config.rabbitmq_publish_retries + 1):
-            try:
-                self._connection = await aio_pika.connect_robust(
-                    self._config.rabbitmq_url
-                )
-                self._channel = await self._connection.channel()
-                self._exchange = await self._channel.declare_exchange(
-                    self._config.rabbitmq_exchange,
-                    ExchangeType.TOPIC,
-                    durable=True,
-                )
-                return
-            except Exception as error:
-                last_error = error
-                logger.exception(
-                    "RabbitMQ connection attempt %s/%s failed.",
-                    attempt,
-                    self._config.rabbitmq_publish_retries,
-                )
-                await asyncio.sleep(min(attempt, 5))
-        raise RuntimeError("Could not connect to RabbitMQ.") from last_error
+        try:
+            connection = await self._run(publisher_connection)
+        except (OSError, pika.exceptions.AMQPError) as error:
+            self._available = False
+            raise RabbitMQError("Could not connect to RabbitMQ.") from error
+        self._available = connection.is_open
 
     async def publish(self, event: dict[str, Any]) -> None:
-        last_error: Exception | None = None
-        for attempt in range(1, self._config.rabbitmq_publish_retries + 1):
-            try:
-                if not self.available:
-                    await self.connect()
-                assert self._exchange is not None
-                await self._exchange.publish(
-                    Message(
-                        json.dumps(event).encode(),
-                        content_type="application/json",
-                        delivery_mode=DeliveryMode.PERSISTENT,
-                        message_id=event["event_id"],
-                        type=event["event_type"],
-                    ),
-                    routing_key=event["event_type"],
-                )
-                return
-            except Exception as error:
-                last_error = error
-                logger.exception(
-                    "RabbitMQ publish attempt %s/%s failed.",
-                    attempt,
-                    self._config.rabbitmq_publish_retries,
-                )
-                await asyncio.sleep(min(attempt, 5))
-        raise RuntimeError("Could not publish report update event.") from last_error
+        """Publisher confirms and retries come from shared.messaging."""
+        try:
+            await self._run(publish_event, event)
+        except RabbitMQPublishError:
+            self._available = False
+            raise
+        self._available = True
 
     async def close(self) -> None:
-        if self._connection and not self._connection.is_closed:
-            await self._connection.close()
+        await self._run(discard_publisher_connection)
+        self._executor.shutdown(wait=False)
+        self._available = False
+
+    async def _run(self, function, *args):
+        return await asyncio.get_running_loop().run_in_executor(self._executor, function, *args)
