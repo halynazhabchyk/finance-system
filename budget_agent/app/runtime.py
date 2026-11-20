@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 
 import httpx
 from starlette.applications import Starlette
-
-project_root = str(Path(__file__).resolve().parents[2])
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
 
 from shared.ai_tools.a2a.server import create_agent_app
 from shared.ai_tools.a2a.server.wiring import configure_logging, jwt_verifier, lazy_llm_factory

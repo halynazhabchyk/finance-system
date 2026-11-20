@@ -5,8 +5,11 @@ WORKDIR /app
 COPY ai_assistant/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY pyproject.toml /tmp/shared-pkg/
+COPY shared/ /tmp/shared-pkg/shared/
+RUN pip install --no-cache-dir /tmp/shared-pkg && rm -rf /tmp/shared-pkg
+
 COPY ai_assistant/ .
-COPY shared/ ./shared/
 
 EXPOSE 8020
 

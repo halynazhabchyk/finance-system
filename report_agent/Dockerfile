@@ -5,8 +5,11 @@ WORKDIR /app
 COPY report_agent/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY pyproject.toml /tmp/shared-pkg/
+COPY shared/ /tmp/shared-pkg/shared/
+RUN pip install --no-cache-dir /tmp/shared-pkg && rm -rf /tmp/shared-pkg
+
 COPY report_agent/ .
-COPY shared/ ./shared/
 
 EXPOSE 8042
 

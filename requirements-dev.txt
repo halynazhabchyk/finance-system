@@ -8,5 +8,6 @@
 -r mcp_server/requirements.txt
 -r budget_agent/requirements.txt
 -r report_agent/requirements.txt
+-e .
 pytest==9.2.0
 httpx==0.28.1

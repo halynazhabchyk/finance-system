@@ -4,15 +4,9 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
-
-project_root = str(Path(__file__).resolve().parents[2])
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.routers import chat, system

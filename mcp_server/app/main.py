@@ -6,10 +6,10 @@ import logging
 import sys
 from pathlib import Path
 
-# Allows running as a module or as a script (MCP Inspector).
-for path in (Path(__file__).resolve().parents[2], Path(__file__).resolve().parents[1]):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+# Script mode (MCP Inspector runs this file directly): make the 'app' package importable.
+_SERVICE_ROOT = str(Path(__file__).resolve().parents[1])
+if _SERVICE_ROOT not in sys.path:
+    sys.path.insert(0, _SERVICE_ROOT)
 
 import uvicorn
 

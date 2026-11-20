@@ -3,16 +3,10 @@
 from __future__ import annotations
 
 import logging
-import sys
 import os
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
-
-project_root = str(Path(__file__).resolve().parents[2])
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
 
 from app.api.routers import reports, system
 from app.workers.report_consumer import ReportEventConsumer

@@ -5,8 +5,11 @@ WORKDIR /app
 COPY budget_service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY pyproject.toml /tmp/shared-pkg/
+COPY shared/ /tmp/shared-pkg/shared/
+RUN pip install --no-cache-dir /tmp/shared-pkg && rm -rf /tmp/shared-pkg
+
 COPY budget_service/ .
-COPY shared/ ./shared/
 
 EXPOSE 8002
 
