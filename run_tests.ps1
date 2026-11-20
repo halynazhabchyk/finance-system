@@ -2,16 +2,16 @@ $ErrorActionPreference = "Stop"
 
 # Each suite runs in its own pytest process.
 $suites = @(
-    ".\user_service\tests",
-    ".\budget_service\tests",
-    ".\report_service\tests",
-    ".\shared\security\tests",
+    ".\services\user_service\tests",
+    ".\services\budget_service\tests",
+    ".\services\report_service\tests",
+    ".\libs\shared\tests",
     ".\libs\ai_tools\tests",
-    ".\ai_assistant\tests",
-    ".\mcp_server\tests",
-    ".\budget_agent\tests",
-    ".\report_agent\tests",
-    ".\a2a_chat\tests"
+    ".\services\ai_assistant\tests",
+    ".\services\mcp_server\tests",
+    ".\services\budget_agent\tests",
+    ".\services\report_agent\tests",
+    ".\tools\a2a_chat\tests"
 )
 
 $failed = @()

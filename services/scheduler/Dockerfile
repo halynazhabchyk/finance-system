@@ -2,14 +2,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY scheduler/requirements.txt .
+COPY services/scheduler/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY pyproject.toml /tmp/shared-pkg/
-COPY shared/ /tmp/shared-pkg/shared/
+COPY libs/shared/ /tmp/shared-pkg/
 RUN pip install --no-cache-dir /tmp/shared-pkg && rm -rf /tmp/shared-pkg
 
-COPY scheduler/ .
+COPY services/scheduler/ .
 
 EXPOSE 8010
 

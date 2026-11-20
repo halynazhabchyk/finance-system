@@ -11,8 +11,3 @@ requires-python = ">=3.11"
 
 [tool.setuptools.packages.find]
 include = ["shared*"]
-exclude = ["*.tests", "*.tests.*"]
-
-# Root-level test suites: shared/*/tests and a2a_chat/tests.
-[tool.pytest.ini_options]
-pythonpath = ["."]

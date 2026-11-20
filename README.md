@@ -43,15 +43,28 @@ Budget Service записує події в таблицю `outbox_events` у т
 ігнорує застарілі snapshots. Scheduler публікує `DailyReportUpdateRequested` або
 `MonthlyReportUpdateRequested` із конкретним періодом.
 
+## Структура репозиторію
+
+```text
+services/   мікросервіси: user_service, budget_service, report_service, scheduler,
+            ai_assistant, mcp_server, budget_agent, report_agent
+            (кожен: app/, tests/, Dockerfile, requirements.txt, pytest.ini)
+libs/       спільні бібліотеки, що встановлюються як пакети
+  shared/     інфраструктура для всіх сервісів (пакет shared)
+  ai_tools/   LLM, інструменти, guardrails, A2A – лише для AI-компонентів
+infra/      конфігурація інфраструктури: traefik/, keycloak/, postgres/
+tools/      допоміжні програми, не сервіси: a2a_chat/
+```
+
 ## Запуск локально
 
 ### 1. Підготовка змінних середовища
 
-Створіть локальні файли `.env`, `user_service/.env`,
-`budget_service/.env` і `report_service/.env` з відповідних `.env.example`.
+Створіть локальні файли `.env`, `services/user_service/.env`,
+`services/budget_service/.env` і `services/report_service/.env` з відповідних `.env.example`.
 Вкажіть власні паролі та секрети. Ці файли не можна додавати до Git.
 
-Автентифікація (ЛР №5) – Keycloak (realm `finance`, `keycloak/realm-export.json`):
+Автентифікація (ЛР №5) – Keycloak (realm `finance`, `infra/keycloak/realm-export.json`):
 у кореневому `.env` задайте `KC_BOOTSTRAP_ADMIN_PASSWORD`, `KC_DB_PASSWORD` і,
 для входу через Google, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. Сервіси
 перевіряють RS256-токени Keycloak локально (JWKS); спільного `JWT_SECRET_KEY`
@@ -103,12 +116,12 @@ Report Service: /internal/reports/monthly/{year}/{month},
 Якщо сервіси запускаються не в контейнерах, застосуйте міграції окремо:
 
 ```powershell
-& .\.venv\Scripts\alembic.exe -c .\user_service\alembic.ini upgrade head
-& .\.venv\Scripts\alembic.exe -c .\budget_service\alembic.ini upgrade head
-& .\.venv\Scripts\alembic.exe -c .\report_service\alembic.ini upgrade head
+& .\.venv\Scripts\alembic.exe -c .\services\user_service\alembic.ini upgrade head
+& .\.venv\Scripts\alembic.exe -c .\services\budget_service\alembic.ini upgrade head
+& .\.venv\Scripts\alembic.exe -c .\services\report_service\alembic.ini upgrade head
 ```
 
-Скрипт `postgres/init-multiple-databases.sh` створює окремі бази даних для
+Скрипт `infra/postgres/init-multiple-databases.sh` створює окремі бази даних для
 User, Budget і Report Service під час першої ініціалізації Docker volume.
 
 ## Тестування
@@ -194,11 +207,11 @@ docker compose up -d report-service
 
 | Компонент | Папка | Gateway |
 | --- | --- | --- |
-| AI Assistant | `ai_assistant/` | `POST /api/assistant/chat`, Swagger `/api/assistant/docs` |
-| MCP Server | `mcp_server/` | `/mcp` (Streamable HTTP); локально – stdio |
-| budget-agent | `budget_agent/` | `/agents/budget/.well-known/agent-card.json` |
-| report-agent | `report_agent/` | `/agents/report/.well-known/agent-card.json` |
-| Інтерактивний A2A-клієнт | `a2a_chat/` | консольна програма, не сервіс: чат з агентом природною мовою |
+| AI Assistant | `services/ai_assistant/` | `POST /api/assistant/chat`, Swagger `/api/assistant/docs` |
+| MCP Server | `services/mcp_server/` | `/mcp` (Streamable HTTP); локально – stdio |
+| budget-agent | `services/budget_agent/` | `/agents/budget/.well-known/agent-card.json` |
+| report-agent | `services/report_agent/` | `/agents/report/.well-known/agent-card.json` |
+| Інтерактивний A2A-клієнт | `tools/a2a_chat/` | консольна програма, не сервіс: чат з агентом природною мовою |
 
 Потрібна змінна в кореневому `.env`: `LLM_API_KEY` (ключ Google Gemini).
 Необов'язкові: `LLM_MODEL` (за замовчуванням `gemini-3.5-flash`) і `LLM_THINKING_LEVEL`.
@@ -225,10 +238,11 @@ Invoke-RestMethod -Method Post http://localhost:8080/api/assistant/chat -Headers
 
 # MCP Inspector: stdio (з кореня проєкту) або HTTP http://localhost:8080/mcp
 $env:MCP_USER_JWT = $token; $env:GATEWAY_URL = "http://localhost:8080"
-npx @modelcontextprotocol/inspector .\.venv\Scripts\python.exe mcp_server\app\main.py
+npx @modelcontextprotocol/inspector .\.venv\Scripts\python.exe services\mcp_server\app\main.py
 
 # Чат з A2A-агентом природною мовою (токен – зі змінної або прихованим вводом)
 $env:A2A_ACCESS_TOKEN = $token
-.\.venv\Scripts\python.exe -m a2a_chat                  # budget-agent (producer)
-.\.venv\Scripts\python.exe -m a2a_chat --agent report   # report-agent (consumer)
+Set-Location tools
+.\..\.venv\Scripts\python.exe -m a2a_chat                  # budget-agent (producer)
+.\..\.venv\Scripts\python.exe -m a2a_chat --agent report   # report-agent (consumer)
 ```

@@ -51,7 +51,7 @@ services:
     ports:
       - "${TRAEFIK_PORT:-8080}:80"
     volumes:
-      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     depends_on:
       consul:
         condition: service_healthy
@@ -100,9 +100,9 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-      - user_service/.env
-      - budget_service/.env
-      - report_service/.env
+      - services/user_service/.env
+      - services/budget_service/.env
+      - services/report_service/.env
     environment:
       POSTGRES_DB: postgres
     ports:
@@ -111,7 +111,7 @@ services:
       - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/01-create-service-databases.sh:ro
+      - ./infra/postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/01-create-service-databases.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
@@ -155,7 +155,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes:
-      - ./keycloak:/opt/keycloak/data/import:ro
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
     expose:
       - "8080"
     depends_on:
@@ -171,10 +171,10 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: user_service/Dockerfile
+      dockerfile: services/user_service/Dockerfile
     restart: unless-stopped
     env_file:
-      - user_service/.env
+      - services/user_service/.env
     environment:
       USER_DB_HOST: postgres
       POSTGRES_PORT: 5432
@@ -208,10 +208,10 @@ services:
   budget-service:
     build:
       context: .
-      dockerfile: budget_service/Dockerfile
+      dockerfile: services/budget_service/Dockerfile
     restart: unless-stopped
     env_file:
-      - budget_service/.env
+      - services/budget_service/.env
     environment:
       BUDGET_DB_HOST: postgres
       POSTGRES_PORT: 5432
@@ -257,10 +257,10 @@ services:
   report-service:
     build:
       context: .
-      dockerfile: report_service/Dockerfile
+      dockerfile: services/report_service/Dockerfile
     restart: unless-stopped
     env_file:
-      - report_service/.env
+      - services/report_service/.env
     environment:
       REPORT_DB_HOST: postgres
       POSTGRES_PORT: 5432
@@ -304,7 +304,7 @@ services:
     container_name: finance-scheduler
     build:
       context: .
-      dockerfile: scheduler/Dockerfile
+      dockerfile: services/scheduler/Dockerfile
     restart: unless-stopped
     deploy:
       replicas: 1
@@ -347,7 +347,7 @@ services:
   ai-assistant:
     build:
       context: .
-      dockerfile: ai_assistant/Dockerfile
+      dockerfile: services/ai_assistant/Dockerfile
     restart: unless-stopped
     environment:
       <<: [*ai-common, *security-env]
@@ -374,7 +374,7 @@ services:
   mcp-server:
     build:
       context: .
-      dockerfile: mcp_server/Dockerfile
+      dockerfile: services/mcp_server/Dockerfile
     restart: unless-stopped
     environment:
       GATEWAY_URL: http://traefik
@@ -401,7 +401,7 @@ services:
   budget-agent:
     build:
       context: .
-      dockerfile: budget_agent/Dockerfile
+      dockerfile: services/budget_agent/Dockerfile
     restart: unless-stopped
     environment:
       <<: *ai-common
@@ -420,7 +420,7 @@ services:
   report-agent:
     build:
       context: .
-      dockerfile: report_agent/Dockerfile
+      dockerfile: services/report_agent/Dockerfile
     restart: unless-stopped
     environment:
       <<: *ai-common

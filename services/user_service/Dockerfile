@@ -2,14 +2,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY user_service/requirements.txt .
+COPY services/user_service/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY pyproject.toml /tmp/shared-pkg/
-COPY shared/ /tmp/shared-pkg/shared/
+COPY libs/shared/ /tmp/shared-pkg/
 RUN pip install --no-cache-dir /tmp/shared-pkg && rm -rf /tmp/shared-pkg
 
-COPY user_service/ .
+COPY services/user_service/ .
 
 
 EXPOSE 8001
