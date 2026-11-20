@@ -105,7 +105,10 @@ def test_blocked_account_reported_by_user_service_is_403(api):
     assert response.status_code == 403
 
 
-def test_health_and_docs_are_public(api):
+def test_health_and_docs_are_public(api, monkeypatch):
+    from app.api.routers import system
+
+    monkeypatch.setattr(system, "database_available", lambda engine: True)
     assert api.client.get("/internal/health").status_code == 200
     assert api.client.get("/docs").status_code == 200
     assert api.client.get("/openapi.json").status_code == 200

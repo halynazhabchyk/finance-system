@@ -8,8 +8,9 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL, Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 
@@ -46,3 +47,13 @@ class DatabaseSettings:
 def create_session_factory(settings: DatabaseSettings) -> tuple[Engine, sessionmaker[Session]]:
     engine = create_engine(settings.url, pool_pre_ping=True)
     return engine, sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+
+def database_available(engine: Engine) -> bool:
+    """Readiness probe: the database answers a trivial query."""
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        return False
+    return True
