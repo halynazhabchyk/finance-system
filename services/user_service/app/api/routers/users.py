@@ -3,21 +3,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query
 
-from shared.errors import PermissionDeniedError
-
 from app.api.dependencies import DatabaseSession, ProfileReader, ProfileWriter
-from app.models import UserAccount
 from app.schemas import UserResponse, UserUpdateName
 from app.services import user_service
 
 
 router = APIRouter(prefix="/internal/users", tags=["users"])
-
-
-def _require_owner(profile: UserAccount, user_id: uuid.UUID) -> None:
-    """``user_id`` in the path names a user, so another user's id is 403 (nothing to hide)."""
-    if profile.user_id != user_id:
-        raise PermissionDeniedError("The token does not authorize access to this user.")
 
 
 # Internal: not published through Traefik.
@@ -33,7 +24,7 @@ def list_users(
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: uuid.UUID, profile: ProfileReader) -> UserResponse:
     """Open Host Service: own profile of the token subject (created at the first sign-in)."""
-    _require_owner(profile, user_id)
+    user_service.require_owner(profile, user_id)
     return profile
 
 
@@ -44,8 +35,7 @@ def update_user_name(
     db: DatabaseSession,
     profile: ProfileWriter,
 ) -> UserResponse:
-    _require_owner(profile, user_id)
-    return user_service.update_user_name(db, user_id, payload)
+    return user_service.rename_own_profile(db, profile, user_id, payload)
 
 
 # Internal: not published through Traefik.

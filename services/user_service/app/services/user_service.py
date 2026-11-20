@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from shared.errors import ConflictError, NotFoundError
+from shared.errors import ConflictError, NotFoundError, PermissionDeniedError
 
 from app.models import UserAccount
 from app.repositories import users as user_repository
@@ -44,6 +44,17 @@ def get_or_create_profile(db: Session, claims: ProfileClaims) -> UserAccount:
         return user
     db.refresh(user)
     return user
+
+
+def require_owner(profile: UserAccount, user_id: uuid.UUID) -> None:
+    """A user may act only on their own profile; another id is 403 (it names a user, nothing to hide)."""
+    if profile.user_id != user_id:
+        raise PermissionDeniedError("The token does not authorize access to this user.")
+
+
+def rename_own_profile(db: Session, profile: UserAccount, user_id: uuid.UUID, payload: UserUpdateName) -> UserAccount:
+    require_owner(profile, user_id)
+    return update_user_name(db, user_id, payload)
 
 
 def update_user_name(db: Session, user_id: uuid.UUID, payload: UserUpdateName) -> UserAccount:
