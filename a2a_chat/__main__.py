@@ -1,7 +1,4 @@
-"""Entry point: python -m a2a_chat [--agent budget|report] [--gateway URL].
-
-ЛР №5: the Keycloak access token is taken from A2A_ACCESS_TOKEN or a hidden prompt.
-"""
+"""Entry point: python -m a2a_chat [--agent budget|report] [--gateway URL]."""
 
 from __future__ import annotations
 

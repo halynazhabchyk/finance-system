@@ -1,4 +1,4 @@
-"""Swagger UI login through Keycloak (ЛР №5, requirements 2.6 and 4.5)."""
+"""Swagger UI login through Keycloak."""
 
 import pytest
 from fastapi import Depends, FastAPI

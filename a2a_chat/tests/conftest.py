@@ -11,7 +11,6 @@ os.environ["CONSUL_ENABLED"] = "false"
 
 from shared.security.testing import make_token  # noqa: E402
 
-# ЛР №5: a Keycloak-shaped access token (the agent stand-in compares it byte for byte).
 VALID_TOKEN = make_token(preferred_username="student")
 
 
@@ -23,7 +22,7 @@ def received_texts() -> list[str]:
 
 @pytest.fixture
 def gateway(received_texts):
-    """Traefik stand-in: a real A2A agent at /agents/budget (no password login since ЛР №5)."""
+    """Traefik stand-in: a real A2A agent at /agents/budget."""
     import httpx
     from starlette.applications import Starlette
     from starlette.routing import Mount

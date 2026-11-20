@@ -1,4 +1,4 @@
-"""Gateway routes of the AI components registered through Consul tags (requirements 2.6, 4.6, 5.7)."""
+"""Gateway routes of the AI components registered through Consul tags."""
 
 from shared.service_discovery.consul import default_traefik_tags
 
@@ -31,7 +31,7 @@ def test_existing_business_routes_are_unchanged():
 
 
 def test_user_service_publishes_only_own_profile_routes():
-    """ЛР №5 (Р6): no public list of users, no /block or /activate, no password login router."""
+    """No public user list, /block, /activate or password login."""
     import re
 
     tags = default_traefik_tags("user-service")

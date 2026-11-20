@@ -1,4 +1,4 @@
-"""FastAPI dependencies: database session and the authenticated user (ЛР №5: Keycloak token)."""
+"""FastAPI dependencies: database session and the authenticated user."""
 
 import uuid
 from collections.abc import Generator
@@ -14,7 +14,7 @@ from shared.security.openapi import authorization_code_scheme
 
 from app.db.session import SessionLocal
 
-# OAuth scopes of this service's resources, shown in the Swagger "Authorize" dialog.
+# Scopes shown in the Swagger Authorize dialog.
 SERVICE_SCOPES = ["reports:read"]
 oauth2_scheme = authorization_code_scheme(SERVICE_SCOPES, auto_error=False)
 verified_token = bearer_token_dependency(oauth2_scheme)
@@ -30,7 +30,7 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def get_current_user(token: Annotated[VerifiedToken, Security(verified_token)]) -> uuid.UUID:
-    """``user_id`` = ``sub`` of the token this service verified itself; User Service confirms the account."""
+    """user_id = sub of the verified token; User Service rejects blocked accounts."""
     validate_user_token(token.raw, token.user_id)
     return token.user_id
 
@@ -38,5 +38,5 @@ def get_current_user(token: Annotated[VerifiedToken, Security(verified_token)]) 
 # Shortcuts for route signatures.
 DatabaseSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[uuid.UUID, Depends(get_current_user)]
-# ЛР №5, п. 4: the scope is checked locally before User Service is asked (403 insufficient_scope).
+# Scope is checked before User Service is called.
 ReportReader = Annotated[uuid.UUID, Security(get_current_user, scopes=["reports:read"])]

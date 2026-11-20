@@ -25,22 +25,18 @@ def list_users(db: Session, limit: int, offset: int) -> list[UserAccount]:
 
 
 def get_or_create_profile(db: Session, claims: ProfileClaims) -> UserAccount:
-    """Return the profile of the token subject, creating it at the first sign-in (JIT provisioning).
-
-    ``user_id`` is the Keycloak ``sub``; the profile is filled from the token
-    claims, never from the Keycloak database.
-    """
+    """Return the profile of the token subject, creating it at the first sign-in."""
     user = user_repository.get_by_id(db, claims.user_id)
     if user is not None:
         return user
     if user_repository.get_by_email(db, claims.email) is not None:
-        # An older local profile owns this email; merging accounts automatically is not safe.
+        # Email belongs to another profile; no automatic merge.
         raise ConflictError("A profile with this email already exists under another identity.")
     user = user_repository.create(db, user_id=claims.user_id, user_name=claims.user_name, email=claims.email)
     try:
         db.commit()
     except IntegrityError:
-        # Two first requests of the same user raced: the other one created the profile.
+        # Concurrent first request already created it.
         db.rollback()
         user = user_repository.get_by_id(db, claims.user_id)
         if user is None:

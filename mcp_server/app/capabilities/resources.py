@@ -1,9 +1,4 @@
-"""MCP resources – read-only views of budgets and reports (requirement 4.4).
-
-URI parameters are validated by the same Pydantic schemas as tool arguments;
-content is the same minimal projection as tool results (JSON, size-limited,
-marked as untrusted data).
-"""
+"""MCP resources – read-only views of budgets and reports."""
 
 from __future__ import annotations
 

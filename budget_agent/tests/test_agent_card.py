@@ -1,4 +1,4 @@
-"""Agent Card of budget-agent (requirements 5.2, 5.3) and JWT protection of the A2A endpoint."""
+"""Agent Card of budget-agent and JWT protection of the A2A endpoint."""
 
 import httpx
 import pytest

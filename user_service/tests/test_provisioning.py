@@ -1,4 +1,4 @@
-"""Profile created at the first sign-in from the Keycloak token claims (ЛР №5, requirement 2.7)."""
+"""Profile created at the first sign-in."""
 
 import uuid
 from types import SimpleNamespace

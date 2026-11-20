@@ -44,8 +44,7 @@ def create_app() -> FastAPI:
     async def lifespan(_: FastAPI):
         with service_registration(service_config):
             stop_event = asyncio.Event()
-            # Consumers run in their own threads; the polling workers are
-            # asyncio tasks that offload DB work, so HTTP handling is not blocked.
+            # Consumers run in threads, pollers as asyncio tasks.
             reply_consumer = SagaReplyConsumer()
             dlq_consumer = SagaDlqConsumer()
             reply_consumer.start()

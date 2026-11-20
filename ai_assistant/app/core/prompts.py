@@ -1,9 +1,4 @@
-"""System prompt of the AI Assistant.
-
-The prompt separates instructions from data (requirement 3.3): everything that
-comes from tools – category names, expense descriptions, report fields – is
-data, never instructions.
-"""
+"""System prompt of the AI Assistant."""
 
 ASSISTANT_SYSTEM_PROMPT = """\
 You are the finance assistant of a personal monthly budget system.

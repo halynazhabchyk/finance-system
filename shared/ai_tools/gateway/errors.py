@@ -16,8 +16,7 @@ _MESSAGES: dict[int, str] = {
     409: "Conflict with the current state: {detail}.",
     422: "The service rejected the data: {detail}. Correct the arguments or ask the user.",
 }
-# ЛР №5, п. 4–5: a valid token without the needed OAuth scope (RFC 6750 "insufficient_scope").
-# Kept apart from the generic 403 so the model does not blame a blocked account or another user's data.
+# 403 insufficient_scope: separate message, not "blocked account".
 _INSUFFICIENT_SCOPE = (
     "Permission missing: the user's access token does not include the scope \"{scope}\" required for this "
     "operation. Tell the user to sign in again and grant \"{scope}\" (Swagger: Authorize, tick the scope). Do not retry."
@@ -29,11 +28,7 @@ _NETWORK = "The finance service is unreachable. Try again later."
 
 
 class GatewayError(Exception):
-    """A request to the public API failed.
-
-    ``llm_message`` is safe to show to the model and the user: it contains the
-    service ``detail`` (already client-safe) but no tokens or internal URLs.
-    """
+    """A request to the public API failed."""
 
     def __init__(self, status_code: int | None, llm_message: str) -> None:
         super().__init__(llm_message)
@@ -61,7 +56,7 @@ class GatewayError(Exception):
 
 
 class InsufficientScope(GatewayError):
-    """403 with ``WWW-Authenticate: Bearer error="insufficient_scope"`` – the token lacks a scope."""
+    """403 insufficient_scope: the token lacks a scope."""
 
     def __init__(self, scope: str) -> None:
         super().__init__(403, _INSUFFICIENT_SCOPE.format(scope=scope))

@@ -1,8 +1,4 @@
-"""Pydantic schemas of tool arguments, validated before any API call.
-
-``extra="forbid"`` rejects unknown arguments, so a model cannot smuggle in
-``user_id`` or other fields: the user is always taken from the verified JWT.
-"""
+"""Pydantic schemas of tool arguments, validated before any API call."""
 
 from __future__ import annotations
 
@@ -31,14 +27,14 @@ def _reject_control_characters(value: str) -> str:
 
 
 def _reject_instructions(value: str) -> str:
-    # Stored names/descriptions are shown to models later; do not let a tool persist an injection.
+    # Do not store prompt injections in names/descriptions.
     if find_injection_rules(value):
         raise ValueError("looks like an instruction to the assistant (possible prompt injection)")
     return value
 
 
 def _reject_active_content(value: str) -> str:
-    # Names/descriptions are rendered by clients later; do not store markup, scripts or code (stored XSS).
+    # Do not store markup or code in names/descriptions (stored XSS).
     if find_active_content_rules(value):
         raise ValueError("must not contain HTML markup, scripts, dangerous links or program code")
     return value
@@ -49,12 +45,11 @@ def _strip(value: object) -> object:
 
 
 def _money_from_llm(value: object) -> object:
-    # Models send numbers as JSON floats; str() keeps the value as written (250.5 -> "250.5").
+    # str() keeps a JSON float as written (250.5 -> "250.5").
     return str(value) if isinstance(value, float) else value
 
 
-# Constraints come first so they become a native constrained type (and a proper JSON schema);
-# the BeforeValidator wraps it and runs before the constraints are checked.
+# Constraints first (proper JSON schema); the BeforeValidator runs before them.
 SafeName = Annotated[
     str,
     Field(min_length=1, max_length=NAME_MAX_LENGTH, description="Category name."),

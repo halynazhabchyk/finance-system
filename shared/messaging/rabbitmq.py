@@ -1,8 +1,4 @@
-"""Backward-compatible RabbitMQ transport facade.
-
-Use the focused modules for new code:
-config, exceptions, connection, topology, publisher, retry, and consumer.
-"""
+"""Backward-compatible RabbitMQ transport facade."""
 
 from .consumer import EventConsumer
 from .config import rabbitmq_url

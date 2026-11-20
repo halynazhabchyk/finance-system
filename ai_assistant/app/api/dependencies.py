@@ -16,15 +16,14 @@ from shared.security.openapi import authorization_code_scheme
 from app.core.config import get_settings
 from app.services.chat_service import AssistantChatService
 
-# Same scheme as User/Budget/Report Service: Swagger UI signs in through Keycloak
-# (Authorization Code + PKCE) and sends the token as "Authorization: Bearer <token>".
+# Swagger UI signs in through Keycloak (Authorization Code + PKCE).
 SERVICE_SCOPES = ["assistant:chat"]
 oauth2_scheme = authorization_code_scheme(SERVICE_SCOPES, auto_error=False)
 verified_token = bearer_token_dependency(oauth2_scheme)
 
 
 def get_access_token(token: Annotated[VerifiedToken, Security(verified_token, scopes=["assistant:chat"])]) -> str:
-    """The caller's token, verified here (aud = ai-assistant) and forwarded unchanged; never logged."""
+    """Verified token of the caller, forwarded unchanged."""
     return token.raw
 
 

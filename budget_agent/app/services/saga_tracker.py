@@ -1,9 +1,4 @@
-"""Waits for the "CreateExpense" SAGA through GET .../expenses/{id}/saga.
-
-SAGA states (ЛР №3): STARTED -> COMPLETED (expense CONFIRMED) or
-STARTED -> COMPENSATING -> CANCELLED (expense CANCELLED, reason DLQ/TIMEOUT).
-The agent only observes the SAGA; it never changes it.
-"""
+"""Waits for the "CreateExpense" SAGA through GET .../expenses/{id}/saga."""
 
 from __future__ import annotations
 

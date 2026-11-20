@@ -62,7 +62,7 @@ class ChatSession:
         except RemoteAgentError as error:
             self._conversation.reset()
             self._console.error(str(error))
-            if "401" in str(error):  # the agent rejected the Keycloak token (expired after 15 min)
+            if "401" in str(error):  # token rejected or expired
                 self._console.error(REJECTED)
             return
         self._console.result(result)

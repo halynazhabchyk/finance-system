@@ -1,11 +1,4 @@
-"""Client-side memory of one request.
-
-The agents keep no dialogue history: every A2A message starts a new task. When
-an agent needs more details it ends the task with INPUT_REQUIRED and asks a
-question. The client then sends the earlier request, the question and the
-user's answer together, so the agent sees the whole request. Any other final
-state closes the request.
-"""
+"""Client-side memory of one request."""
 
 from __future__ import annotations
 

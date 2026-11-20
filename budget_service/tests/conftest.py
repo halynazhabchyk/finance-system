@@ -15,7 +15,7 @@ os.environ.setdefault("BUDGET_DB_USER", "budget_service_test")
 os.environ.setdefault("BUDGET_DB_PASSWORD", "test-password")
 os.environ.setdefault("BUDGET_DB_HOST", "localhost")
 os.environ.setdefault("CONSUL_ENABLED", "false")
-os.environ.setdefault("OIDC_AUDIENCE", "budget-service")  # ЛР №5: tests override the verifier with test keys
+os.environ.setdefault("OIDC_AUDIENCE", "budget-service")  # tests use test keys
 
 
 class FakeSession:

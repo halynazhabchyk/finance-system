@@ -24,7 +24,7 @@ def chat(remote, console, *lines):
     return asyncio.run(scenario())
 
 
-# --- conversation memory -------------------------------------------------------------------
+# --- conversation memory ---
 
 def test_follow_up_answer_is_sent_with_the_open_request():
     conversation = Conversation()
@@ -41,7 +41,7 @@ def test_follow_up_answer_is_sent_with_the_open_request():
     assert conversation.compose("Нове питання") == "Нове питання"
 
 
-# --- token (ЛР №5) -------------------------------------------------------------------------
+# --- token ---
 
 def test_token_comes_from_the_environment_first():
     def must_not_ask(prompt):
@@ -77,7 +77,7 @@ def test_unusable_tokens_are_reported_before_any_request(token, message):
         inspect_token(token)
 
 
-# --- session -------------------------------------------------------------------------------
+# --- session ---
 
 def test_agent_card_is_shown_on_start(remote, console, output):
     chat(remote, console)
@@ -104,7 +104,7 @@ def test_question_of_the_agent_is_answered_in_the_next_message(remote, console, 
     text = "\n".join(output)
     assert "[INPUT_REQUIRED] За який місяць додати витрату?" in text
     assert "[COMPLETED] Expense is CONFIRMED." in text
-    # The agent keeps no history: the client resent the request together with the answer.
+    # The client resends the request with the answer.
     assert received_texts[1].startswith("Додай 250 грн на продукти\nУточнення агента: За який місяць додати витрату?")
     assert received_texts[1].endswith("Відповідь: листопад 2026")
     assert not session.awaiting_answer
@@ -126,7 +126,7 @@ def test_rejected_token_is_shown_as_an_error(remote, console, output):
     assert any("Swagger" in line for line in output)  # how to get a new token
 
 
-# --- whole program -------------------------------------------------------------------------
+# --- whole program ---
 
 def test_run_uses_the_token_from_the_environment_and_chats_until_exit(gateway, console, output):
     lines = iter(["Додай витрату 250 грн на продукти за листопад 2026", "вихід"])

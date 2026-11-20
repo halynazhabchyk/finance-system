@@ -8,7 +8,7 @@ sys.path.insert(0, str(SERVICE_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT))
 
 os.environ["CONSUL_ENABLED"] = "false"
-os.environ.setdefault("OIDC_AUDIENCE", "ai-assistant")  # ЛР №5: tests override the verifier with test keys
+os.environ.setdefault("OIDC_AUDIENCE", "ai-assistant")  # tests use test keys
 os.environ.setdefault("LLM_API_KEY", "test-key-not-real")
 os.environ.setdefault("LLM_MODEL", "gemini-test")
 os.environ.setdefault("GATEWAY_URL", "http://gateway.test")
@@ -19,7 +19,7 @@ import pytest  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def keycloak_test_keys():
-    """ЛР №5: the assistant verifies tokens itself; tests use the test JWKS instead of Keycloak."""
+    """Test keys instead of Keycloak."""
     from app.main import app
     from shared.security.fastapi import get_token_verifier
     from shared.security.testing import make_verifier

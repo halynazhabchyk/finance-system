@@ -1,4 +1,4 @@
-"""add retry diagnostics and saga link to outbox events
+"""add retry diagnostics and saga link to outbox events.
 
 Revision ID: a3c5e7f9b1d2
 Revises: f1a2b3c4d5e6

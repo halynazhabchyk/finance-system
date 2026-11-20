@@ -26,7 +26,7 @@ def get_settings() -> BudgetAgentSettings:
         gateway=GatewaySettings.from_env(),
         limits=AgentLimits.from_env(),
         llm=optional_llm_settings(),
-        # Longer than SAGA_TIMEOUT_SECONDS (30 s) + one watcher interval, so TIMEOUT compensation is observed.
+        # Longer than SAGA_TIMEOUT_SECONDS plus one watcher interval.
         saga_wait_seconds=float(os.getenv("A2A_SAGA_WAIT_SECONDS", "45")),
         saga_poll_interval_seconds=float(os.getenv("A2A_SAGA_POLL_INTERVAL_SECONDS", "1")),
     )

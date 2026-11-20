@@ -1,12 +1,8 @@
-"""password_hash is optional: profiles are provisioned from Keycloak tokens (ЛР №5)
-
-Credentials now live in Keycloak; a profile created at the first sign-in has no
-local password. The column is kept (not dropped) so earlier rows stay intact.
+"""password_hash is optional: profiles are provisioned from Keycloak tokens.
 
 Revision ID: b5e1c7d9a3f2
 Revises: 9a1f2c3d4e5f
 Create Date: 2026-11-14 17:00:00
-
 """
 from typing import Sequence, Union
 
@@ -30,7 +26,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Profiles without a password would violate NOT NULL; they must be removed first.
+    # Remove passwordless profiles before NOT NULL.
     op.execute("DELETE FROM user_accounts WHERE password_hash IS NULL")
     op.alter_column(
         "user_accounts",

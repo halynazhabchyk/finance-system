@@ -29,11 +29,7 @@ class OutboxPublisher:
         self.session_factory = session_factory or SessionLocal
 
     def publish_pending_once(self) -> bool:
-        """Publish the oldest available event, retaining the row lock until commit.
-
-        Returns True when an event was published, so the caller can continue
-        without waiting for the next poll interval.
-        """
+        """Publish the oldest available event, retaining the row lock until commit."""
         with self.session_factory() as db:
             event = db.scalar(
                 select(OutboxEvent)

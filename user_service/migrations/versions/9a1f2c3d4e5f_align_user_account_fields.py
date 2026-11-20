@@ -1,9 +1,8 @@
-"""align user account fields with the User Service data model
+"""align user account fields with the User Service data model.
 
 Revision ID: 9a1f2c3d4e5f
 Revises: f6c8ebe9976c
 Create Date: 2026-10-31 15:25:00
-
 """
 from typing import Sequence, Union
 

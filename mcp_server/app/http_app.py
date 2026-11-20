@@ -10,8 +10,7 @@ from app.core.config import McpSettings
 
 
 def create_http_app(server: MCPServer, settings: McpSettings) -> Starlette:
-    """``stateless_http``: no MCP session lives in process memory, so several
-    instances can run behind Traefik and any of them can serve any request."""
+    """Stateless HTTP: no session in memory, so several instances can run behind Traefik."""
     return server.streamable_http_app(
         streamable_http_path=settings.http_path,
         stateless_http=True,

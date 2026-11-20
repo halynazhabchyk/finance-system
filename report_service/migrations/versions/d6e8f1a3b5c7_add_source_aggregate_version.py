@@ -1,9 +1,8 @@
-"""add source aggregate version to monthly reports
+"""add source aggregate version to monthly reports.
 
 Revision ID: d6e8f1a3b5c7
 Revises: c5d8e1f3a7b2
 Create Date: 2026-11-05 16:10:00
-
 """
 from typing import Sequence, Union
 

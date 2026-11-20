@@ -27,7 +27,7 @@ def get_settings() -> ReportAgentSettings:
         gateway=gateway,
         limits=AgentLimits.from_env(),
         llm=optional_llm_settings(),
-        # budget-agent is reached through Traefik like any other part of the system.
+        # budget-agent is reached through Traefik.
         budget_agent_url=os.getenv("BUDGET_AGENT_URL", f"{gateway.base_url}/agents/budget").rstrip("/"),
         a2a_timeout_seconds=float(os.getenv("A2A_TIMEOUT_SECONDS", "90")),
     )

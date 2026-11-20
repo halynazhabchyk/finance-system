@@ -1,13 +1,4 @@
-"""Access token of the user for the A2A chat (ЛР №5: Keycloak, no password login any more).
-
-The token is obtained by signing in through Swagger UI (Authorization Code + PKCE)
-and is given to the client in ``A2A_ACCESS_TOKEN`` or typed in a hidden prompt.
-It lives only in the memory of the running client and is never printed or logged.
-
-The claims are read here without verifying the signature, only to show who is
-signed in and to report an expired token early; the agents and the services
-verify the token themselves.
-"""
+"""Keycloak access token for the A2A chat: from A2A_ACCESS_TOKEN or a hidden prompt; never printed."""
 
 from __future__ import annotations
 

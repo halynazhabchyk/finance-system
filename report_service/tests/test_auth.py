@@ -1,4 +1,4 @@
-"""Report Service verifies the Keycloak token itself (ЛР №5, requirements 3.1–3.4, 7.2)."""
+"""Report Service verifies the Keycloak token itself."""
 
 import uuid
 from types import SimpleNamespace
@@ -73,7 +73,7 @@ def test_report_is_built_for_the_token_subject_only(api, monkeypatch):
     assert response.status_code == 404
 
     assert api.calls == [(token, sub)]  # the same token goes to User Service unchanged
-    assert seen["user"] == sub  # reports are read for the verified subject, never for a client-supplied id
+    assert seen["user"] == sub  # verified subject only
 
 
 def test_blocked_account_is_403(api):
@@ -82,7 +82,7 @@ def test_blocked_account_is_403(api):
     assert api.client.get("/internal/reports/annual/2026", headers=bearer(make_token())).status_code == 403
 
 
-# --- ЛР №5, п. 4: OAuth scopes ----------------------------------------------------------------
+# --- scopes ---
 
 
 @pytest.mark.parametrize("path", ["/internal/reports/monthly/2026/11", "/internal/reports/annual/2026"])

@@ -1,14 +1,4 @@
-"""RabbitMQ worker that updates the Report Service read model.
-
-Each message goes through three steps (see ``ReportEventConsumer.handle``):
-
-1. validate   - reject a malformed message before touching the database
-                (``event_contract``);
-2. apply once - one local transaction: inbox check, read-model change,
-                inbox row, COMMIT (Transactional Inbox);
-3. reply      - for the "create expense" SAGA step, publish ExpenseProcessed
-                after COMMIT (``saga_participant``).
-"""
+"""RabbitMQ worker that updates the Report Service read model."""
 
 from __future__ import annotations
 
@@ -76,14 +66,10 @@ class ReportEventConsumer:
             # Also sent for a duplicate: the first reply may have been lost.
             self._reply(event)
 
-    # --- Step 2: local transaction (Transactional Inbox) ---------------------
+    # --- Step 2: local transaction (Transactional Inbox) ---
 
     def _apply_once(self, event: dict) -> None:
-        """Apply the event to the read model at most once.
-
-        The read-model change and the inbox row are committed together, so
-        after a failure neither of them is stored and redelivery is safe.
-        """
+        """Apply the event to the read model at most once."""
         event_id = uuid.UUID(event["event_id"])
         event_type = event["event_type"]
         received_at = datetime.now(timezone.utc)
@@ -126,7 +112,7 @@ class ReportEventConsumer:
             date.fromisoformat(event["period_end"]),
         )
 
-    # --- Step 3: SAGA reply ---------------------------------------------------
+    # --- Step 3: SAGA reply ---
 
     @staticmethod
     def _reply(event: dict) -> None:

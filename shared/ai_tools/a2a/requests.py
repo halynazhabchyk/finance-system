@@ -1,10 +1,4 @@
-"""How an A2A message is interpreted: which skill, which arguments, which text.
-
-Convention of this system: a structured request is a data part
-``{"skill_id": "...", "arguments": {...}}``; a free-text request is a text part
-(then the agent's default text skill is used). ``skill_id`` may also be put in
-the message metadata.
-"""
+"""How an A2A message is interpreted: which skill, which arguments, which text."""
 
 from __future__ import annotations
 

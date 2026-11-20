@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-# Every component is tested in its own pytest process (each has its own "app" package).
+# Each suite runs in its own pytest process.
 $suites = @(
     ".\user_service\tests",
     ".\budget_service\tests",

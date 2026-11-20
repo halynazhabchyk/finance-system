@@ -1,7 +1,4 @@
-"""Budget domain events published through the transactional outbox.
-
-Only builds event dictionaries; storing them is ``app.integrations.outbox``.
-"""
+"""Budget domain events published through the transactional outbox."""
 
 from __future__ import annotations
 

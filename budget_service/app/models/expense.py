@@ -81,8 +81,7 @@ class Expense(Base):
         nullable=True,
     )
 
-    # SAGA lifecycle: PENDING until Report Service confirms, CANCELLED after
-    # compensation (DLQ or timeout). Cancelled rows are kept as history.
+    # SAGA status: PENDING -> CONFIRMED or CANCELLED (row kept as history).
     saga_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

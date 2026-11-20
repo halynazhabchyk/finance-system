@@ -1,10 +1,4 @@
-"""Use case "chat with the assistant" – independent of FastAPI.
-
-Order of checks for one request:
-1. size of the message, the prompt-injection and active-content filters (no tokens spent);
-2. the JWT through User Service (an invalid or blocked user spends no tokens);
-3. the function-calling loop with the five whitelisted tools.
-"""
+"""Use case "chat with the assistant" – independent of FastAPI."""
 
 from __future__ import annotations
 

@@ -1,16 +1,4 @@
-"""RabbitMQ event consumer.
-
-Two delivery modes:
-
-* retry topology (default) - a failed message goes to ``<queue>.retry``
-  (TTL, then back to the main exchange); after ``max_delivery_attempts``
-  or on ``PermanentEventError`` it goes to the dead-letter exchange;
-* simple - the queue is bound to one exchange only, a failed message is
-  requeued with ``nack`` after a pause, a permanent failure is dropped.
-
-In both modes the message is acknowledged only after the handler returned
-(or after the failure was routed), so a crash never loses a message.
-"""
+"""RabbitMQ event consumer."""
 
 from __future__ import annotations
 
@@ -73,7 +61,7 @@ class EventConsumer:
         self.thread: Thread | None = None
         self.connection: pika.BlockingConnection | None = None
 
-    # --- Lifecycle -----------------------------------------------------------
+    # --- Lifecycle ---
 
     def start(self) -> None:
         logger.info(
@@ -134,7 +122,7 @@ class EventConsumer:
         )
         return partial(self._handle_with_retry, topology)
 
-    # --- Message handling ----------------------------------------------------
+    # --- Message handling ---
 
     def _receive(self, body: bytes, event_type: str) -> tuple[dict[str, Any], str]:
         """Decode the message and log its arrival. Raises json.JSONDecodeError."""
@@ -171,10 +159,7 @@ class EventConsumer:
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     def _route_failure(self, ch, topology, body, properties, event_type: str, attempt: int) -> bool:
-        """Send a failed message to retry or, after the last attempt, to the DLQ.
-
-        Returns False when the broker refused it; the caller then requeues.
-        """
+        """Send a failed message to retry or, after the last attempt, to the DLQ."""
         try:
             if attempt >= self.max_delivery_attempts:
                 publish_dead_letter(ch, topology, body, properties, event_type)

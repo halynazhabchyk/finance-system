@@ -1,18 +1,4 @@
-"""Verification of Keycloak access tokens (ЛР №5, requirement 3.1). No FastAPI here.
-
-Every service verifies the token itself (Zero Trust, 3.2):
-
-* signature – RS256 only, public keys from the realm JWKS; keys are cached and
-  the JWKS is downloaded again when a token carries an unknown ``kid``
-  (key rotation in Keycloak);
-* ``iss`` – the *public* issuer, the one the browser used, although the keys
-  are fetched from the *internal* address inside Docker (2.2);
-* ``aud`` – the identifier of this service (4.3);
-* ``exp``/``nbf``/``iat`` – with a small clock-skew leeway;
-* ``typ`` – an access token (``Bearer``), not an ID or refresh token.
-
-``alg: none`` and HS* tokens (for example the former User Service token) are rejected.
-"""
+"""Verification of Keycloak access tokens: RS256 via JWKS, iss, aud, exp."""
 
 from __future__ import annotations
 
@@ -80,7 +66,7 @@ class VerifiedToken:
 
 
 class TokenVerifier:
-    """Stateless apart from the JWKS cache, so one instance per process is shared by all requests."""
+    """One instance per process (shares the JWKS cache)."""
 
     def __init__(self, settings: OidcSettings, jwk_client: PyJWKClient | None = None) -> None:
         self.settings = settings
@@ -103,7 +89,6 @@ class TokenVerifier:
             raise InvalidToken("missing_kid")
 
         try:
-            # Unknown kid -> PyJWKClient downloads the JWKS once more before giving up.
             signing_key = self._jwk_client.get_signing_key(header["kid"])
         except jwt.PyJWKClientConnectionError as error:
             raise InvalidToken("jwks_unavailable") from error

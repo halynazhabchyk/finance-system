@@ -1,9 +1,8 @@
-"""add aggregate version to budgets
+"""add aggregate version to budgets.
 
 Revision ID: b7d2e4f6a8c1
 Revises: e7f4a8b2c1d0
 Create Date: 2026-11-05 16:10:00
-
 """
 from typing import Sequence, Union
 

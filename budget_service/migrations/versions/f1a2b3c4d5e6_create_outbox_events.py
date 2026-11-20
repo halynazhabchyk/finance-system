@@ -1,4 +1,4 @@
-"""create transactional outbox events
+"""create transactional outbox events.
 
 Revision ID: f1a2b3c4d5e6
 Revises: b7d2e4f6a8c1

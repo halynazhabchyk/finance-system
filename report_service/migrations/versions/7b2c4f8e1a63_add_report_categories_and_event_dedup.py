@@ -1,4 +1,4 @@
-"""add report category totals and processed event tracking
+"""add report category totals and processed event tracking.
 
 Revision ID: 7b2c4f8e1a63
 Revises: 3e95d0f17c7a

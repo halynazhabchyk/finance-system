@@ -1,9 +1,8 @@
-"""add currency to budgets
+"""add currency to budgets.
 
 Revision ID: e7f4a8b2c1d0
 Revises: c4e7a9b2d1f0
 Create Date: 2026-11-01 15:40:00
-
 """
 from typing import Sequence, Union
 

@@ -1,4 +1,4 @@
-"""Keycloak access-token verification without a real Keycloak (ЛР №5, requirements 3.1 and 7.2)."""
+"""Token verification with test keys."""
 
 import time
 import uuid
@@ -105,7 +105,7 @@ def test_unknown_kid_triggers_one_more_download_for_rotated_keys():
     verifier = make_verifier(jwk_client=client)
     verifier.verify(make_token())
 
-    # Keycloak rotated its key: the new kid is published in JWKS after the first download.
+    # Key rotation: new kid appears after the first download.
     client.jwk_set = jwks(("test-key-1", rsa_key()), ("rotated-key", rsa_key("rotated")))
     verified = verifier.verify(make_token(key=rsa_key("rotated"), kid="rotated-key"))
 

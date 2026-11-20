@@ -1,4 +1,4 @@
-"""HTTP behaviour of the shared token dependency: 401 / 403 insufficient_scope / 200 (ЛР №5, 3.4, 4.2)."""
+"""Token dependency: 401, 403 insufficient_scope, 200."""
 
 import logging
 import uuid

@@ -1,10 +1,4 @@
-"""MCP tools – the same five operations as the assistant (requirement 4.3).
-
-Parameters use the shared Pydantic types, so the input schema in MCP Inspector
-shows the same constraints. Execution goes through the shared ``ToolExecutor``
-(whitelist, validation, API call, projection); results are size-limited and
-marked as untrusted data. Failures are returned as ``isError`` tool results.
-"""
+"""MCP tools – the same five operations as the assistant."""
 
 from __future__ import annotations
 

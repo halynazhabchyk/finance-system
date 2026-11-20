@@ -1,4 +1,4 @@
-"""create saga instances and expense saga status
+"""create saga instances and expense saga status.
 
 Revision ID: c8e0a2b4d6f8
 Revises: a3c5e7f9b1d2
@@ -19,8 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Expenses created before LR3 have no distributed operation in flight,
-    # so they are treated as already confirmed.
+    # Expenses created before LR3 are treated as confirmed.
     op.add_column(
         "expenses",
         sa.Column(

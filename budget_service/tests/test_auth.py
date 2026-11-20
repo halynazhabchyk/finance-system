@@ -1,4 +1,4 @@
-"""Budget Service verifies the Keycloak token itself (ЛР №5, requirements 3.1–3.4, 7.2)."""
+"""Budget Service verifies the Keycloak token itself."""
 
 import uuid
 from types import SimpleNamespace
@@ -111,7 +111,7 @@ def test_health_and_docs_are_public(api):
     assert api.client.get("/openapi.json").status_code == 200
 
 
-# --- ЛР №5, п. 4: OAuth scopes (least privilege) ---------------------------------------------
+# --- scopes ---
 
 READ_ONLY = ("users:read", "budgets:read")
 

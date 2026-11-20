@@ -216,9 +216,7 @@ def discover_service(
     return ConsulClient(config).discover(service_name)
 
 
-# ЛР №4: gateway routes of the MCP server and the A2A agents. They are not
-# "/api/X -> /internal/X" mappings: the MCP endpoint keeps its path, the agents'
-# prefix is stripped so the Agent Card is served at /.well-known/agent-card.json.
+# Routes of the MCP server (path kept) and A2A agents (prefix stripped).
 AI_COMPONENT_ROUTES: dict[str, tuple[str, bool]] = {
     "mcp-server": ("/mcp", False),
     "budget-agent": ("/agents/budget", True),
@@ -243,9 +241,7 @@ def _ai_component_tags(service_name: str, public_prefix: str, strip_prefix: bool
     return tags
 
 
-# ЛР №5 (decision Р6): only the user's own profile is public – GET /api/users/{id} (Open Host
-# Service) and PATCH /api/users/{id}/name. The list of users, /block and /activate stay internal
-# operations of User Service: Traefik answers 404 for them.
+# Only the user's own profile is public; list, /block and /activate stay internal.
 PUBLIC_ROUTE_RULES: dict[str, str] = {
     "user-service": "PathRegexp(`^/api/users/[0-9a-fA-F-]{36}(/name)?$`)",
 }
@@ -291,8 +287,6 @@ def default_traefik_tags(service_name: str) -> list[str]:
         f"traefik.http.middlewares.{strip_middleware}.stripprefix.prefixes={public_prefix}",
         f"traefik.http.middlewares.{add_middleware}.addprefix.prefix={internal_prefix}",
     ]
-    # ЛР №5: the former "user-auth" router (/api/users/auth -> /internal/auth, password login)
-    # is gone – Keycloak issues the tokens.
     tags.extend(
         [
             f"traefik.http.routers.{service_name}-docs.rule=PathPrefix(`{public_prefix}/docs`)",

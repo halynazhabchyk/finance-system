@@ -1,4 +1,4 @@
-"""User Service API with Keycloak tokens (ЛР №5: 2.7 first sign-in, 3.3 ownership, 3.4 statuses)."""
+"""User Service API with Keycloak tokens."""
 
 import uuid
 from datetime import datetime, timezone
@@ -130,7 +130,7 @@ def test_renaming_another_user_is_403(api, monkeypatch):
 
 
 def test_password_registration_and_login_are_removed(api):
-    """ЛР №5 (Р7): accounts are registered in Keycloak; User Service keeps no passwords."""
+    """Password registration and login are removed."""
     registration = api.client.post(
         "/internal/users",
         json={"user_name": "Lab", "email": "lab@example.com", "password": "password123"},
@@ -141,7 +141,7 @@ def test_password_registration_and_login_are_removed(api):
     assert login.status_code == 404
 
 
-# --- ЛР №5, п. 4: OAuth scopes ----------------------------------------------------------------
+# --- scopes ---
 
 
 def test_reading_own_profile_needs_users_read(api):

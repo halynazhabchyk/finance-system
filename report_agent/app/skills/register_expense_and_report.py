@@ -1,14 +1,4 @@
-"""Skill ``register_expense_and_report`` – A2A integration with budget-agent (requirement 5.5).
-
-1. resolve the Agent Card of budget-agent (through the gateway);
-2. create an A2A task ``register_expense`` with the same user JWT;
-3. follow the task states (SUBMITTED -> WORKING -> COMPLETED / FAILED);
-4. after COMPLETED (SAGA completed, expense CONFIRMED) read the updated monthly report;
-   after FAILED report the reason (SAGA cancelled: DLQ or TIMEOUT).
-
-RabbitMQ is not involved here: the SAGA itself still runs on domain events
-between Budget Service and Report Service.
-"""
+"""Skill register_expense_and_report – A2A integration with budget-agent."""
 
 from __future__ import annotations
 
@@ -35,7 +25,7 @@ class RegisterExpenseAndReportSkill:
         self._explainer = explainer
 
     async def __call__(self, ctx: SkillContext) -> None:
-        # Guardrail: validate before delegating, so an invalid request never reaches another agent.
+        # Validate before delegating to another agent.
         args = CreateExpenseArgs.model_validate(ctx.request.arguments)
 
         async def relay(state: str, text: str) -> None:

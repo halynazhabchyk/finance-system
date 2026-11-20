@@ -1,4 +1,4 @@
-"""FinanceApiClient: JWT header, timeouts, HTTP errors -> messages for the LLM (requirement 2.1)."""
+"""FinanceApiClient: JWT header, timeouts, HTTP errors -> messages for the LLM."""
 
 import asyncio
 import uuid
@@ -127,7 +127,7 @@ def test_malformed_or_foreign_token_is_rejected(token_factory):
 
 
 def test_insufficient_scope_gets_its_own_llm_message():
-    """ЛР №5: 403 insufficient_scope must not read as "blocked account / another user's data"."""
+    """403 insufficient_scope gets its own message."""
     from shared.ai_tools.gateway.errors import InsufficientScope
 
     def handler(request):

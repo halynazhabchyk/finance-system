@@ -47,7 +47,7 @@ class Console:
     async def state(self, state: str, text: str) -> None:
         """Called by RemoteAgentClient for every state update (streaming)."""
         if state in FINAL_STATES:
-            return  # the final state is printed by ``result`` together with artifacts
+            return  # printed by result()
         self._status(state, text)
 
     def result(self, result: RemoteTaskResult) -> None:

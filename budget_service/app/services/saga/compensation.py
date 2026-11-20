@@ -30,10 +30,7 @@ def cancel_expense(
     *,
     skip_locked: bool = False,
 ) -> bool:
-    """CT1 in one local transaction. Idempotent: a finished saga is never cancelled twice.
-
-    Returns True when this call cancelled the saga.
-    """
+    """CT1 in one local transaction. Idempotent: a finished saga is never cancelled twice."""
     saga = _lock_unfinished_saga(db, saga_id, skip_locked=skip_locked)
     if saga is None:
         return False
@@ -45,8 +42,7 @@ def cancel_expense(
 
     expense, budget = _lock_expense_with_budget(db, saga.aggregate_id)
     if expense is None:
-        # The budget (and its expenses) was deleted; BudgetDeleted already
-        # cleaned up Report Service, so only the saga needs closing.
+        # Budget already deleted: only the saga needs closing.
         saga.failure_details = f"{saga.failure_details} Expense no longer exists."
     elif budget is not None and expense.saga_status != EXPENSE_CANCELLED:
         _cancel_expense_record(db, saga, expense, budget)

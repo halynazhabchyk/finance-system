@@ -49,11 +49,7 @@ def record_budget_change(
     bump_version: bool = True,
     **event_fields,
 ) -> None:
-    """Stage the snapshot event for a change made in the caller's transaction.
-
-    The aggregate version grows with every change, so Report Service can
-    ignore snapshots that arrive out of order.
-    """
+    """Stage the snapshot event for a change made in the caller's transaction."""
     if bump_version:
         budget.aggregate_version += 1
     db.flush()

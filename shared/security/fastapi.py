@@ -1,23 +1,6 @@
-"""FastAPI dependency that turns ``Authorization: Bearer`` into a verified token (ЛР №5, 3.1–3.4, 4.2).
+"""FastAPI dependency: verifies the Bearer token; 401 if invalid, 403 if a scope is missing."""
 
-Usage in a service::
-
-    verified_token = bearer_token_dependency(oauth2_scheme)
-
-    def get_current_user(token: Annotated[VerifiedToken, Security(verified_token)]) -> uuid.UUID: ...
-
-    @router.post("", dependencies=[Security(get_current_user, scopes=["budgets:write"])])
-
-Responses follow RFC 6750:
-
-* 401 + ``WWW-Authenticate: Bearer`` – no token, invalid or expired token;
-* 403 + ``WWW-Authenticate: Bearer error="insufficient_scope"`` – valid token without the scope.
-
-Error texts are generic; the reason goes to the log together with ``sub``, never the token itself.
-"""
-
-# No "from __future__ import annotations": FastAPI must evaluate Annotated[..., Depends(scheme)]
-# with the closure variable "scheme" when the dependency is built.
+# No "from __future__ import annotations": FastAPI must resolve Depends(scheme) at build time.
 import logging
 from collections.abc import Callable
 from functools import lru_cache

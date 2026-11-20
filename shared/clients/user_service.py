@@ -1,10 +1,4 @@
-"""Synchronous client for the User Service Open Host Service ``GET /internal/users/{user_id}``.
-
-ЛР №5: the calling service has already verified the Keycloak token itself. This
-call forwards the same token and lets User Service reject blocked accounts and
-create the profile at the first sign-in. Error texts are generic: the caller
-learns what to do, not how the system is built; the token is never logged.
-"""
+"""Client of the User Service Open Host Service GET /internal/users/{user_id}."""
 
 from __future__ import annotations
 

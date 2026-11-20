@@ -1,9 +1,4 @@
-"""Skill ``register_expense``: create an expense and follow its SAGA to the end.
-
-Structured requests go straight to the API (validated by the shared schema).
-Free-text requests are handled by the function-calling loop with four of the
-whitelisted tools; the agent then follows the SAGA of the created expense.
-"""
+"""Skill register_expense: create an expense and follow its SAGA to the end."""
 
 from __future__ import annotations
 

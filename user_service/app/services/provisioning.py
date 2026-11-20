@@ -1,8 +1,4 @@
-"""Profile data taken from a verified Keycloak access token (ЛР №5, requirement 2.7).
-
-The token is verified elsewhere (``shared.security``); this module only turns
-its claims into the fields of a User Service profile.
-"""
+"""Profile fields taken from a verified Keycloak token."""
 
 from __future__ import annotations
 

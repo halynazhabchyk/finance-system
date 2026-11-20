@@ -26,11 +26,7 @@ UNIQUE_CONSTRAINT_MESSAGES = {
 
 @contextmanager
 def write_transaction(db: Session) -> Iterator[None]:
-    """Run the block and COMMIT it; on any failure roll everything back.
-
-    The business change and its outbox row are written in the same block,
-    so they are committed or discarded together (Transactional Outbox).
-    """
+    """Run the block and COMMIT it; on any failure roll everything back."""
     try:
         yield
         commit(db)

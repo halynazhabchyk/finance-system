@@ -1,8 +1,4 @@
-"""Domain errors raised by the service layer of every microservice.
-
-Services describe *what* went wrong and do not depend on FastAPI;
-``shared.web.errors`` decides which HTTP status each error becomes.
-"""
+"""Domain errors raised by the service layer of every microservice."""
 
 
 class DomainError(Exception):

@@ -1,9 +1,8 @@
-"""align report schema with ORM constraints
+"""align report schema with ORM constraints.
 
 Revision ID: 8c4e7a9b2d1f
 Revises: 7b2c4f8e1a63
 Create Date: 2026-10-31 16:15:00
-
 """
 from typing import Sequence, Union
 

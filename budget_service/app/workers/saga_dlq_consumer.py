@@ -1,12 +1,4 @@
-"""Starts compensation when ExpenseCreated is dead-lettered by Report Service.
-
-Report Service publishes failed messages to the dead-letter exchange
-`finance.events.dlx` with the event type as routing key. Its own DLQ
-`report-service-events.dlq` is bound with "#" and keeps every message for
-inspection. This consumer owns a second queue `budget-service-saga-dlq`
-bound with `ExpenseCreated`, so it receives a copy of exactly the saga
-messages and never removes anything from the Report Service DLQ.
-"""
+"""Starts compensation when ExpenseCreated is dead-lettered by Report Service."""
 
 from __future__ import annotations
 
@@ -67,7 +59,7 @@ class SagaDlqConsumer:
             event.get("event_id"),
             saga_id,
         )
-        # A failure propagates, so the message is requeued and compensation retried.
+        # On failure the message is requeued.
         self.handler.compensate(
             saga_id,
             REASON_DLQ,

@@ -1,9 +1,4 @@
-"""Optional natural-language explanation of prepared data by the LLM.
-
-The model receives the data as untrusted content and has no tools here, so it
-can only explain; the same token limits apply (``FunctionCallingLoop``).
-If no model is configured or it fails, the skill still returns its data.
-"""
+"""Optional natural-language explanation of prepared data by the LLM."""
 
 from __future__ import annotations
 

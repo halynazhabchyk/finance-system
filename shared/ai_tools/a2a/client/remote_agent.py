@@ -1,11 +1,4 @@
-"""Client side of A2A: discover a remote agent and run one of its skills.
-
-The remote agent is reached through the gateway (``GATEWAY_URL/agents/<name>``).
-Its Agent Card advertises the public URL (``http://localhost:8080/...``), which
-does not resolve inside the Docker network, so requests are sent to the base
-URL the card was fetched from. The card is still validated: the skill must be
-declared and the agent must accept HTTP Bearer (JWT) authentication.
-"""
+"""Client side of A2A: discover a remote agent and run one of its skills."""
 
 from __future__ import annotations
 

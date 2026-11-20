@@ -41,7 +41,7 @@ class SagaService:
     """Keeps saga state. Methods named after a local transaction commit it."""
 
     def start_create_expense(self, db: Session, expense_id: uuid.UUID) -> SagaInstance:
-        """Persist the initial saga state inside T1 (requirement 5.6). No commit."""
+        """Persist the initial saga state inside T1. No commit."""
         now = utcnow()
         saga = SagaInstance(
             saga_id=uuid.uuid4(),

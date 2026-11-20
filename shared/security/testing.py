@@ -1,8 +1,4 @@
-"""Test doubles for token verification – no real Keycloak (ЛР №5, requirement 7.2).
-
-A test RSA key pair signs tokens; ``StaticJwkClient`` serves its public part as
-a JWKS and counts downloads, so key caching and rotation can be asserted.
-"""
+"""Test doubles for token verification: test RSA keys and an in-memory JWKS."""
 
 from __future__ import annotations
 
@@ -80,7 +76,7 @@ def make_token(
     algorithm: str = "RS256",
     **claims: Any,
 ) -> str:
-    """A token shaped like a Keycloak access token (claims can be overridden or set to None to drop them)."""
+    """Keycloak-like test token; a claim set to None is dropped."""
     now = issued_at if issued_at is not None else int(time.time())
     payload: dict[str, Any] = {
         "iss": issuer,

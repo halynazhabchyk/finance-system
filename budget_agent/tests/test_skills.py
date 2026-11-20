@@ -21,7 +21,7 @@ def expense_arguments(api, amount="250.00"):
     return {"budget_id": budget_id, "category_id": category_id, "amount": amount, "occurred_at": "2026-11-08"}
 
 
-# --- register_expense ------------------------------------------------------
+# --- register_expense ---
 
 
 def test_register_expense_follows_saga_to_confirmed(remote, api, caplog):
@@ -117,7 +117,7 @@ def test_text_with_prompt_injection_is_rejected_without_llm(remote, api):
     assert llm.requests == []
 
 
-# --- manage_budget -----------------------------------------------------------
+# --- manage_budget ---
 
 
 def test_manage_budget_creates_a_full_calendar_month(remote, api):
@@ -154,7 +154,7 @@ def test_manage_budget_rejects_unknown_action(remote, api):
     assert api.requests and all(r.method == "GET" for r in api.requests)  # only the JWT check
 
 
-# --- cancel_or_update_expense ------------------------------------------------
+# --- cancel_or_update_expense ---
 
 
 def _confirmed_expense(api):

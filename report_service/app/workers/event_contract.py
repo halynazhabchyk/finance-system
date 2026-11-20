@@ -9,8 +9,7 @@ from shared.messaging.exceptions import PermanentEventError
 QUEUE_NAME = "report-service-events"
 SUPPORTED_EVENT_VERSION = 1
 
-# Budget Service events (LR2 contract + ExpenseCancelled) carry a full budget
-# snapshot with aggregate_version, so they share one idempotent handler.
+# Budget events carry a full snapshot, so one idempotent handler serves them all.
 BUDGET_SNAPSHOT_EVENTS = frozenset(
     {
         "BudgetCreated",
@@ -32,11 +31,7 @@ SCHEDULER_REQUIRED_FIELDS = frozenset({"created_at", "period_start", "period_end
 
 
 def validate_event(event: dict) -> None:
-    """Raise PermanentEventError for a message that no retry can fix.
-
-    Runs before a database session is opened, so a malformed message never
-    touches the inbox and goes straight to the DLQ (see EventConsumer).
-    """
+    """Raise PermanentEventError for a message that no retry can fix."""
     version = event.get("event_version")
     if version != SUPPORTED_EVENT_VERSION:
         raise PermanentEventError(f"Unsupported event version: {version}")

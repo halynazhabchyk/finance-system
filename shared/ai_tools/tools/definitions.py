@@ -47,11 +47,7 @@ class ToolDefinition:
 
 
 def llm_parameters_schema(model: type[ToolArguments]) -> dict[str, Any]:
-    """Simplified JSON schema of ``model`` for the LLM.
-
-    Pydantic remains the source of truth and validates every call; the model
-    only needs types, formats, ranges and descriptions.
-    """
+    """Simplified JSON schema of model for the LLM."""
     schema = model.model_json_schema()
     properties = {
         name: _simplify(prop)
@@ -69,8 +65,7 @@ def _simplify(prop: dict[str, Any]) -> dict[str, Any]:
     if variants:
         non_null = [variant for variant in variants if variant.get("type") != "null"]
         numeric = [variant for variant in non_null if variant.get("type") == "number"]
-        # Decimal is rendered as number|string (constraints live in the number variant);
-        # optional fields as X|null.
+        # Decimal -> number|string, optional -> X|null.
         base = dict(numeric[0]) if numeric else dict(non_null[0])
         merged = {**base, **{key: value for key, value in prop.items() if key != "anyOf"}}
         return _simplify(merged)

@@ -1,4 +1,4 @@
-"""create monthly reports read model
+"""create monthly reports read model.
 
 Revision ID: 3e95d0f17c7a
 Revises:

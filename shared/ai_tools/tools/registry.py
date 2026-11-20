@@ -1,4 +1,4 @@
-"""The whitelist: exactly five tools (requirement 2.2). No update/delete tools exist."""
+"""The whitelist: exactly five tools. No update/delete tools exist."""
 
 from __future__ import annotations
 

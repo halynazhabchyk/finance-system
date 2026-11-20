@@ -1,4 +1,4 @@
-"""create budget schema
+"""create budget schema.
 
 Revision ID: 8d61b293a4fe
 Revises:

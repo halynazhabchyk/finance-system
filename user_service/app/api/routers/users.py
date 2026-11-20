@@ -20,7 +20,7 @@ def _require_owner(profile: UserAccount, user_id: uuid.UUID) -> None:
         raise PermissionDeniedError("The token does not authorize access to this user.")
 
 
-# Internal operation: not published through Traefik (ЛР №5, decision Р6).
+# Internal: not published through Traefik.
 @router.get("", response_model=list[UserResponse])
 def list_users(
     db: DatabaseSession,
@@ -48,7 +48,7 @@ def update_user_name(
     return user_service.update_user_name(db, user_id, payload)
 
 
-# Internal operations: not published through Traefik (ЛР №5, decision Р6).
+# Internal: not published through Traefik.
 @router.patch("/{user_id}/activate", response_model=UserResponse)
 def activate_user(user_id: uuid.UUID, db: DatabaseSession) -> UserResponse:
     return user_service.activate_user(db, user_id)

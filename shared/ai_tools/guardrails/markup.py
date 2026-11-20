@@ -1,18 +1,4 @@
-"""Guardrail of level 3: active content – HTML/JS markup (XSS), dangerous URIs, code to execute.
-
-The prompt-injection filter protects the *model*; this module protects whoever
-later *renders* the data (a browser showing a category name or the assistant
-answer) and rejects requests that try to smuggle code into the system.
-
-* Input (user message, A2A text, names and descriptions written by tools) is
-  rejected: nothing with active content is sent to the model or stored.
-* Output (the model answer) is sanitized instead of rejected: tokens are
-  already spent, and removing tags or images keeps the useful text.
-
-HTML is recognised by ``nh3`` (Python binding of the Rust sanitizer ``ammonia``)
-rather than by regular expressions: it parses markup the way a browser does,
-so plain text like "Кава <3" or "знижка > 50%" is not treated as a tag.
-"""
+"""Guardrail of level 3: active content – HTML/JS markup (XSS), dangerous URIs, code to execute."""
 
 from __future__ import annotations
 
@@ -28,7 +14,7 @@ from shared.ai_tools.guardrails.injection import normalize
 
 logger = logging.getLogger(__name__)
 
-# Entities may hide markup ("&lt;script&gt;"); decoding twice covers double encoding.
+# Decode entities twice (double encoding).
 _MAX_DECODE_ROUNDS = 3
 
 _DANGEROUS_URI = re.compile(
@@ -92,10 +78,7 @@ def find_active_content_rules(text: str) -> list[str]:
 
 
 def ensure_no_active_content(text: str, *, source: str) -> None:
-    """Reject ``text`` from ``source`` if it contains markup, a dangerous URI or code.
-
-    Only rule ids and the length are logged – never the text itself.
-    """
+    """Reject text from source if it contains markup, a dangerous URI or code."""
     matched = find_active_content_rules(text)
     if matched:
         logger.warning(
@@ -111,12 +94,12 @@ def ensure_no_active_content(text: str, *, source: str) -> None:
         )
 
 
-# --- Output: the model answer -------------------------------------------------------------
+# --- Output: the model answer ---
 
 IMAGE_PLACEHOLDER = "[зображення вилучено]"
 LINK_PLACEHOLDER = "[небезпечне посилання вилучено]"
 
-# Link target of Markdown: allows one level of nested parentheses, e.g. (javascript:alert(1)).
+# Markdown link target with one level of nested parentheses.
 _MARKDOWN_TARGET = r"(?:[^()]|\([^()]*\))*"
 _MARKDOWN_IMAGE = re.compile(rf"!\[[^\]]*\]\({_MARKDOWN_TARGET}\)")
 _MARKDOWN_UNSAFE_LINK = re.compile(
@@ -126,14 +109,7 @@ _MARKDOWN_UNSAFE_LINK = re.compile(
 
 
 def sanitize_model_answer(text: str) -> tuple[str, list[str]]:
-    """Return the answer without active content and the ids of what was removed.
-
-    * HTML tags are removed (their text stays, <script>/<style> content is dropped);
-    * Markdown images are replaced: a rendered image is fetched by the browser and can leak
-      data in its URL, while the assistant never needs external images;
-    * Markdown links with javascript:/data: schemes keep only their text;
-    * any remaining dangerous URI scheme is replaced by a placeholder.
-    """
+    """Return the answer without active content and the ids of what was removed."""
     removed: list[str] = []
 
     if contains_html_markup(text):

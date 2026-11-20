@@ -1,9 +1,4 @@
-"""REST operations available only to the deterministic skills of budget-agent (decision Р1).
-
-They extend the shared client with creating budgets, changing/deleting expenses
-and reading the SAGA state. None of them is exposed to a language model: the
-LLM of this agent sees only the whitelisted tools.
-"""
+"""REST operations available only to the deterministic skills of budget-agent."""
 
 from __future__ import annotations
 

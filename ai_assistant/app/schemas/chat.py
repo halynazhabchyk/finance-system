@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-# Hard transport limit; the configurable limit (USER_MESSAGE_MAX_CHARS) is a guardrail in the service.
+# Hard limit; USER_MESSAGE_MAX_CHARS is checked in the service.
 MAX_REQUEST_MESSAGE_CHARS = 20000
 
 

@@ -14,7 +14,7 @@ from app.repositories import budgets as repository
 from app.schemas import CategoryCreate, CategoryUpdate
 from app.services.common import budget_or_404, record_budget_change
 
-# Category changes alter the budget snapshot, so they publish BudgetUpdated.
+# Category changes publish BudgetUpdated.
 CATEGORY_CHANGE_EVENT = "BudgetUpdated"
 
 

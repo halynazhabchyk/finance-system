@@ -1,4 +1,4 @@
-"""POST /internal/assistant/chat with a scripted LLM and an in-memory API (requirement 2.6)."""
+"""POST /internal/assistant/chat with a scripted LLM and an in-memory API."""
 
 from datetime import date
 
@@ -148,7 +148,7 @@ def test_active_content_is_400_without_tokens(assistant, message):
 
 
 def test_token_of_another_service_is_401_and_model_is_not_called(assistant):
-    """ЛР №5 (3.2, 4.3): the assistant checks the token itself – aud must contain ai-assistant."""
+    """The token must be issued for ai-assistant."""
     from shared.security.testing import make_token
 
     api = FakeFinanceApi()
@@ -163,7 +163,7 @@ def test_token_of_another_service_is_401_and_model_is_not_called(assistant):
 
 
 def test_keycloak_token_is_forwarded_to_the_services_unchanged(assistant):
-    """ЛР №5 (5.1): the same token reaches User/Budget Service through the gateway."""
+    """The same token reaches the services through the gateway."""
     api = FakeFinanceApi()
     api.add_budget("2026-11")
     llm = ScriptedLLMClient([tool_call_response(("find_budget_by_period", {"year": 2026, "month": 11})), final_answer("Готово.")])
@@ -175,7 +175,7 @@ def test_keycloak_token_is_forwarded_to_the_services_unchanged(assistant):
 
 
 def test_chat_without_assistant_chat_scope_is_403_and_model_is_not_called(assistant):
-    """ЛР №5, п. 4: the assistant needs its own scope; nothing is forwarded without it."""
+    """Without assistant:chat nothing is forwarded."""
     from shared.security.testing import make_token
 
     api = FakeFinanceApi()

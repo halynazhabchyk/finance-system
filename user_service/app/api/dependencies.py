@@ -1,4 +1,4 @@
-"""FastAPI dependencies: database session and the profile of the token subject (ЛР №5)."""
+"""FastAPI dependencies: database session and the profile of the token subject."""
 
 from collections.abc import Generator
 from typing import Annotated
@@ -17,7 +17,7 @@ from app.services import user_service
 from app.services.provisioning import ProfileClaims
 
 
-# OAuth scopes of this service's resources, shown in the Swagger "Authorize" dialog.
+# Scopes shown in the Swagger Authorize dialog.
 SERVICE_SCOPES = ["users:read", "users:write"]
 oauth2_scheme = authorization_code_scheme(SERVICE_SCOPES, auto_error=False)
 verified_token = bearer_token_dependency(oauth2_scheme)
@@ -39,11 +39,7 @@ def get_current_profile(
     token: Annotated[VerifiedToken, Security(verified_token)],
     db: DatabaseSession,
 ) -> UserAccount:
-    """Profile of the verified token subject; created from the token claims at the first sign-in (2.7).
-
-    A blocked profile cannot perform protected operations in any service:
-    Budget and Report Service ask this endpoint with the user's token.
-    """
+    """Profile of the token subject, created at the first sign-in; blocked profile -> 403."""
     profile = user_service.get_or_create_profile(db, ProfileClaims.from_token(token.claims))
     if not profile.is_active:
         raise PermissionDeniedError("The user account is blocked.")
@@ -51,6 +47,6 @@ def get_current_profile(
 
 
 CurrentProfile = Annotated[UserAccount, Depends(get_current_profile)]
-# ЛР №5, п. 4: least privilege – reading and renaming the profile need different scopes.
+# Reading and renaming need different scopes.
 ProfileReader = Annotated[UserAccount, Security(get_current_profile, scopes=["users:read"])]
 ProfileWriter = Annotated[UserAccount, Security(get_current_profile, scopes=["users:write"])]
