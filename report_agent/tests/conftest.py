@@ -12,7 +12,7 @@ os.environ.pop("LLM_API_KEY", None)
 
 @pytest.fixture
 def api():
-    from shared.ai_tools.testing import FakeFinanceApi
+    from ai_tools.testing import FakeFinanceApi
 
     return FakeFinanceApi()
 
@@ -35,7 +35,7 @@ def remote(api, gateway):
     """A2A client of report-agent."""
     import httpx
 
-    from shared.ai_tools.a2a.client import RemoteAgentClient
+    from ai_tools.a2a.client import RemoteAgentClient
 
     from app.runtime import create_app
 

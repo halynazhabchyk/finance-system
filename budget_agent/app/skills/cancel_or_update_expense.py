@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from shared.ai_tools.a2a.server import SkillContext
-from shared.ai_tools.tools import projections
+from ai_tools.a2a.server import SkillContext
+from ai_tools.tools import projections
 
 from app.skills.schemas import ChangeExpenseArgs
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from shared.ai_tools.tools.projections import money
+from ai_tools.tools.projections import money
 
 
 def limit_exceedances(summary: dict[str, Any]) -> dict[str, Any]:

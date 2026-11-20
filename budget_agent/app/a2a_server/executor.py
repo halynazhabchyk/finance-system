@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from shared.ai_tools.a2a.server import SkillExecutor
-from shared.ai_tools.gateway.factory import ApiClientFactory
-from shared.ai_tools.config import AgentLimits
-from shared.ai_tools.llm import LLMClient
+from ai_tools.a2a.server import SkillExecutor
+from ai_tools.gateway.factory import ApiClientFactory
+from ai_tools.config import AgentLimits
+from ai_tools.llm import LLMClient
 
 from app.a2a_server.agent_card import AGENT_NAME, CANCEL_OR_UPDATE_EXPENSE, MANAGE_BUDGET, REGISTER_EXPENSE
 from app.skills.cancel_or_update_expense import cancel_or_update_expense

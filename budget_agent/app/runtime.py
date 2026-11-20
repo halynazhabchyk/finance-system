@@ -6,10 +6,10 @@ from __future__ import annotations
 import httpx
 from starlette.applications import Starlette
 
-from shared.ai_tools.a2a.server import create_agent_app
-from shared.ai_tools.a2a.server.wiring import configure_logging, jwt_verifier, lazy_llm_factory
-from shared.ai_tools.gateway.factory import gateway_client_factory
-from shared.ai_tools.llm import LLMClient
+from ai_tools.a2a.server import create_agent_app
+from ai_tools.a2a.server.wiring import configure_logging, jwt_verifier, lazy_llm_factory
+from ai_tools.gateway.factory import gateway_client_factory
+from ai_tools.llm import LLMClient
 from shared.service_discovery.consul import ServiceConfig
 
 from app.a2a_server.agent_card import AGENT_NAME, build_budget_agent_card

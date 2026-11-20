@@ -6,9 +6,9 @@ from datetime import date
 import pytest
 from fastapi.testclient import TestClient
 
-from shared.ai_tools.config import AgentLimits
-from shared.ai_tools.gateway import FinanceApiClient
-from shared.ai_tools.testing import (
+from ai_tools.config import AgentLimits
+from ai_tools.gateway import FinanceApiClient
+from ai_tools.testing import (
     FakeFinanceApi,
     ScriptedLLMClient,
     final_answer,

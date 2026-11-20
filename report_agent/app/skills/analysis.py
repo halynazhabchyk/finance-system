@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from shared.ai_tools.a2a.server import SkillContext, SkillFailed
-from shared.ai_tools.agent import FunctionCallingLoop
-from shared.ai_tools.config import AgentLimits
-from shared.ai_tools.llm import LLMClient
-from shared.ai_tools.tools import ToolExecutor, projections, select_tools
+from ai_tools.a2a.server import SkillContext, SkillFailed
+from ai_tools.agent import FunctionCallingLoop
+from ai_tools.config import AgentLimits
+from ai_tools.llm import LLMClient
+from ai_tools.tools import ToolExecutor, projections, select_tools
 
 from app.core.prompts import ANALYSIS_PROMPT
 from app.services import analytics

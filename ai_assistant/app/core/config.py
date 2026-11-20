@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 
-from shared.ai_tools.config import AgentLimits, GatewaySettings, LLMSettings
+from ai_tools.config import AgentLimits, GatewaySettings, LLMSettings
 
 
 @dataclass(frozen=True)

@@ -13,10 +13,10 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from shared.ai_tools.guardrails import guard_tool_result
-from shared.ai_tools.llm import ToolCall
-from shared.ai_tools.tools import TOOL_REGISTRY, ToolExecutor
-from shared.ai_tools.tools.schemas import Month, PositiveMoney, SafeDescription, SafeName, Year
+from ai_tools.guardrails import guard_tool_result
+from ai_tools.llm import ToolCall
+from ai_tools.tools import TOOL_REGISTRY, ToolExecutor
+from ai_tools.tools.schemas import Month, PositiveMoney, SafeDescription, SafeName, Year
 
 from app.core.context import McpDependencies
 

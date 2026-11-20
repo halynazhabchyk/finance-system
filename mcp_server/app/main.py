@@ -16,7 +16,7 @@ import uvicorn
 from shared.service_discovery.consul import ServiceConfig, service_registration
 
 from app.core.config import McpSettings
-from shared.ai_tools.gateway.factory import gateway_client_factory
+from ai_tools.gateway.factory import gateway_client_factory
 
 from app.core.context import McpDependencies
 from app.http_app import create_http_app

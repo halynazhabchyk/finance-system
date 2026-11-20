@@ -7,11 +7,11 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from shared.ai_tools.config import ConfigurationError
-from shared.ai_tools.gateway.client import AccountBlocked, AuthenticationFailed
-from shared.ai_tools.gateway.errors import GatewayError
-from shared.ai_tools.guardrails import GuardrailViolation
-from shared.ai_tools.llm import LLMError, LLMRateLimitError, LLMUnavailableError
+from ai_tools.config import ConfigurationError
+from ai_tools.gateway.client import AccountBlocked, AuthenticationFailed
+from ai_tools.gateway.errors import GatewayError
+from ai_tools.guardrails import GuardrailViolation
+from ai_tools.llm import LLMError, LLMRateLimitError, LLMUnavailableError
 
 logger = logging.getLogger(__name__)
 

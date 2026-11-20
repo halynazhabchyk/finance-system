@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 
-from shared.ai_tools.config import AgentLimits, GatewaySettings, LLMSettings, optional_llm_settings
+from ai_tools.config import AgentLimits, GatewaySettings, LLMSettings, optional_llm_settings
 
 
 @dataclass(frozen=True)

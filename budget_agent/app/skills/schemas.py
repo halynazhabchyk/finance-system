@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
-from shared.ai_tools.tools.schemas import (
+from ai_tools.tools.schemas import (
     Month,
     PositiveMoney,
     SafeDescription,

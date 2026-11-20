@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from pydantic import TypeAdapter
 
-from shared.ai_tools.a2a.server import SkillContext, SkillFailed
-from shared.ai_tools.llm import ToolCall
-from shared.ai_tools.tools import ToolExecutor, select_tools
-from shared.ai_tools.tools import projections
+from ai_tools.a2a.server import SkillContext, SkillFailed
+from ai_tools.llm import ToolCall
+from ai_tools.tools import ToolExecutor, select_tools
+from ai_tools.tools import projections
 
 from app.skills.schemas import CreateBudgetArgs, ManageBudgetArgs
 

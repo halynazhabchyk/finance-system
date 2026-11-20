@@ -9,7 +9,7 @@ os.environ["MCP_TRANSPORT"] = "stdio"
 
 @pytest.fixture
 def api():
-    from shared.ai_tools.testing import FakeFinanceApi
+    from ai_tools.testing import FakeFinanceApi
 
     return FakeFinanceApi()
 
@@ -20,7 +20,7 @@ def mcp_server(api):
     from app.core.config import McpSettings
     from app.core.context import McpDependencies
     from app.server import build_server
-    from shared.ai_tools.gateway import FinanceApiClient
+    from ai_tools.gateway import FinanceApiClient
 
     deps = McpDependencies(
         McpSettings.from_env(),

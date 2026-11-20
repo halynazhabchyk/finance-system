@@ -5,7 +5,7 @@ import logging
 
 from starlette.testclient import TestClient
 
-from shared.ai_tools.testing import ScriptedLLMClient, final_answer
+from ai_tools.testing import ScriptedLLMClient, final_answer
 
 
 def run(remote, skill_id, arguments, llm=None):

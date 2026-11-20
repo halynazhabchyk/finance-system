@@ -4,7 +4,7 @@ import httpx
 import pytest
 from starlette.testclient import TestClient
 
-from shared.ai_tools.testing import make_jwt
+from ai_tools.testing import make_jwt
 
 CARD_PATH = "/.well-known/agent-card.json"
 

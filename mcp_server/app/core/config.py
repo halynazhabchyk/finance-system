@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass
 from typing import Literal
 
-from shared.ai_tools.config import AgentLimits, ConfigurationError, GatewaySettings
+from ai_tools.config import AgentLimits, ConfigurationError, GatewaySettings
 
 Transport = Literal["stdio", "streamable-http"]
 

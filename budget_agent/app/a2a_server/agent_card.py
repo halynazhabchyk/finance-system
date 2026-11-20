@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from a2a.types import AgentCard
 
-from shared.ai_tools.a2a.card import SkillDescription, build_agent_card
+from ai_tools.a2a.card import SkillDescription, build_agent_card
 
 AGENT_NAME = "budget-agent"
 AGENT_VERSION = "1.0.0"

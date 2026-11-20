@@ -7,12 +7,12 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from shared.ai_tools.agent import FunctionCallingLoop
-from shared.ai_tools.config import AgentLimits
-from shared.ai_tools.gateway import FinanceApiClient
-from shared.ai_tools.guardrails import mark_as_untrusted_data
-from shared.ai_tools.llm import LLMClient, LLMError
-from shared.ai_tools.tools import ToolExecutor
+from ai_tools.agent import FunctionCallingLoop
+from ai_tools.config import AgentLimits
+from ai_tools.gateway import FinanceApiClient
+from ai_tools.guardrails import mark_as_untrusted_data
+from ai_tools.llm import LLMClient, LLMError
+from ai_tools.tools import ToolExecutor
 
 from app.core.prompts import EXPLAIN_PROMPT
 

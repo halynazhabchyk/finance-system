@@ -7,7 +7,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY pyproject.toml /tmp/shared-pkg/
 COPY shared/ /tmp/shared-pkg/shared/
-RUN pip install --no-cache-dir /tmp/shared-pkg && rm -rf /tmp/shared-pkg
+COPY libs/ai_tools/ /tmp/ai-tools-pkg/
+RUN pip install --no-cache-dir /tmp/shared-pkg /tmp/ai-tools-pkg && rm -rf /tmp/shared-pkg /tmp/ai-tools-pkg
 
 COPY budget_agent/ .
 

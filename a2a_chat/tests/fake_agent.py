@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from shared.ai_tools.a2a.card import SkillDescription, build_agent_card
-from shared.ai_tools.a2a.server import SkillContext, SkillExecutor, create_agent_app
-from shared.ai_tools.config import AgentLimits, GatewaySettings
-from shared.ai_tools.gateway.client import AuthenticationFailed
-from shared.ai_tools.gateway.factory import gateway_client_factory
+from ai_tools.a2a.card import SkillDescription, build_agent_card
+from ai_tools.a2a.server import SkillContext, SkillExecutor, create_agent_app
+from ai_tools.config import AgentLimits, GatewaySettings
+from ai_tools.gateway.client import AuthenticationFailed
+from ai_tools.gateway.factory import gateway_client_factory
 from shared.service_discovery.consul import ServiceConfig
 
 CARD = build_agent_card(

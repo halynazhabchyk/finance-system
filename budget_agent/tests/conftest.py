@@ -18,7 +18,7 @@ async def no_sleep(_: float) -> None:
 
 @pytest.fixture
 def api():
-    from shared.ai_tools.testing import FakeFinanceApi
+    from ai_tools.testing import FakeFinanceApi
 
     return FakeFinanceApi()
 
@@ -38,7 +38,7 @@ def remote(agent_app, api):
     """A2A client of budget-agent (the same client report-agent uses), over ASGI – no network."""
     import httpx
 
-    from shared.ai_tools.a2a.client import RemoteAgentClient
+    from ai_tools.a2a.client import RemoteAgentClient
 
     def connect(token=None, llm=None):
         return RemoteAgentClient(

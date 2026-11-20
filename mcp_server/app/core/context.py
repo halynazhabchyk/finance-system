@@ -6,8 +6,8 @@ from dataclasses import dataclass
 
 from mcp.server.mcpserver import Context
 
-from shared.ai_tools.gateway import FinanceApiClient
-from shared.ai_tools.gateway.factory import ApiClientFactory
+from ai_tools.gateway import FinanceApiClient
+from ai_tools.gateway.factory import ApiClientFactory
 
 from app.core.auth import resolve_access_token
 from app.core.config import McpSettings

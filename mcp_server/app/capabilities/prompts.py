@@ -5,7 +5,7 @@ from __future__ import annotations
 from mcp.server.mcpserver import MCPServer
 from pydantic import TypeAdapter, ValidationError
 
-from shared.ai_tools.tools.schemas import Month, PositiveMoney, SafeName, Year
+from ai_tools.tools.schemas import Month, PositiveMoney, SafeName, Year
 
 _YEAR = TypeAdapter(Year)
 _MONTH = TypeAdapter(Month)

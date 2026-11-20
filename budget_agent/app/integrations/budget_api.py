@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from shared.ai_tools.gateway import FinanceApiClient
+from ai_tools.gateway import FinanceApiClient
 
 
 class BudgetAgentApiClient(FinanceApiClient):

@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 
-from shared.ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
-from shared.ai_tools.a2a.server import SkillContext, SkillFailed
-from shared.ai_tools.tools import projections
-from shared.ai_tools.tools.schemas import CreateExpenseArgs
+from ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
+from ai_tools.a2a.server import SkillContext, SkillFailed
+from ai_tools.tools import projections
+from ai_tools.tools.schemas import CreateExpenseArgs
 
 from app.services.explainer import Explainer
 

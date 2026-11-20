@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from shared.ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
+from ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
 
 from a2a_chat.auth import REJECTED
 from a2a_chat.config import AgentTarget

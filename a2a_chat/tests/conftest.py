@@ -35,7 +35,7 @@ def gateway(received_texts):
 
 @pytest.fixture
 def remote(gateway):
-    from shared.ai_tools.a2a.client import RemoteAgentClient
+    from ai_tools.a2a.client import RemoteAgentClient
 
     def connect(token: str = VALID_TOKEN) -> RemoteAgentClient:
         return RemoteAgentClient(base_url="http://gateway.test/agents/budget", access_token=token, transport=gateway)

@@ -11,10 +11,10 @@ from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ResourceError
 from pydantic import BaseModel, ValidationError
 
-from shared.ai_tools.gateway import FinanceApiClient, GatewayError
-from shared.ai_tools.guardrails import guard_tool_result
-from shared.ai_tools.tools import projections
-from shared.ai_tools.tools.schemas import (
+from ai_tools.gateway import FinanceApiClient, GatewayError
+from ai_tools.guardrails import guard_tool_result
+from ai_tools.tools import projections
+from ai_tools.tools.schemas import (
     FindBudgetByPeriodArgs,
     GetBudgetByCategoriesArgs,
     GetMonthlyReportArgs,

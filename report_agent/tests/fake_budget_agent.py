@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from shared.ai_tools.a2a.card import SkillDescription, build_agent_card
-from shared.ai_tools.a2a.server import SkillContext, SkillExecutor, SkillFailed, create_agent_app
-from shared.ai_tools.config import AgentLimits
-from shared.ai_tools.gateway import FinanceApiClient
-from shared.ai_tools.testing import FakeFinanceApi
+from ai_tools.a2a.card import SkillDescription, build_agent_card
+from ai_tools.a2a.server import SkillContext, SkillExecutor, SkillFailed, create_agent_app
+from ai_tools.config import AgentLimits
+from ai_tools.gateway import FinanceApiClient
+from ai_tools.testing import FakeFinanceApi
 from shared.service_discovery.consul import ServiceConfig
 
 CARD = build_agent_card(

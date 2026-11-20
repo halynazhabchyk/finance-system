@@ -8,7 +8,7 @@ from typing import Any
 
 from a2a.types import AgentCard
 
-from shared.ai_tools.a2a.client import RemoteTaskResult
+from ai_tools.a2a.client import RemoteTaskResult
 
 Writer = Callable[[str], None]
 

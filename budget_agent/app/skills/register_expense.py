@@ -7,12 +7,12 @@ import uuid
 from collections.abc import Callable
 from typing import Any
 
-from shared.ai_tools.a2a.server import SkillContext, SkillFailed
-from shared.ai_tools.agent import FunctionCallingLoop
-from shared.ai_tools.config import AgentLimits
-from shared.ai_tools.llm import LLMClient, ToolCall
-from shared.ai_tools.tools import ToolExecutor, select_tools
-from shared.ai_tools.tools.schemas import CreateExpenseArgs
+from ai_tools.a2a.server import SkillContext, SkillFailed
+from ai_tools.agent import FunctionCallingLoop
+from ai_tools.config import AgentLimits
+from ai_tools.llm import LLMClient, ToolCall
+from ai_tools.tools import ToolExecutor, select_tools
+from ai_tools.tools.schemas import CreateExpenseArgs
 
 from app.core.prompts import REGISTER_EXPENSE_PROMPT
 from app.services.saga_tracker import wait_for_saga

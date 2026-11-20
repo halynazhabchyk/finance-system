@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-from shared.ai_tools.testing import ScriptedLLMClient, final_answer, latest_tool_result, tool_call_response
+from ai_tools.testing import ScriptedLLMClient, final_answer, latest_tool_result, tool_call_response
 
 
 def run_skill(remote, skill_id, arguments, **connect):

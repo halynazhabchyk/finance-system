@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 
 import httpx
 
-from shared.ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
+from ai_tools.a2a.client import RemoteAgentClient, RemoteAgentError
 
 from a2a_chat.auth import TOKEN_ENV, TokenProblem, inspect_token, read_token
 from a2a_chat.config import AGENTS, ChatSettings

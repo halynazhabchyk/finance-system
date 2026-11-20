@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from shared.ai_tools.tools.schemas import Month, ToolArguments, Year
+from ai_tools.tools.schemas import Month, ToolArguments, Year
 
 
 class MonthArgs(ToolArguments):

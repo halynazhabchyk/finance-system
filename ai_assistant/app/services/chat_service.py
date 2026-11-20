@@ -6,16 +6,16 @@ import logging
 from collections.abc import Callable
 from datetime import date
 
-from shared.ai_tools.agent import AgentRunResult, FunctionCallingLoop
-from shared.ai_tools.config import AgentLimits
-from shared.ai_tools.gateway.factory import ApiClientFactory
-from shared.ai_tools.guardrails import (
+from ai_tools.agent import AgentRunResult, FunctionCallingLoop
+from ai_tools.config import AgentLimits
+from ai_tools.gateway.factory import ApiClientFactory
+from ai_tools.guardrails import (
     check_user_message,
     ensure_no_active_content,
     ensure_no_prompt_injection,
 )
-from shared.ai_tools.llm import LLMClient
-from shared.ai_tools.tools import ToolExecutor
+from ai_tools.llm import LLMClient
+from ai_tools.tools import ToolExecutor
 
 from app.core.prompts import build_system_prompt
 

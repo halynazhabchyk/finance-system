@@ -7,8 +7,8 @@ from typing import Annotated
 
 from fastapi import Depends, Security
 
-from shared.ai_tools.gateway.factory import gateway_client_factory
-from shared.ai_tools.llm.factory import create_llm_client
+from ai_tools.gateway.factory import gateway_client_factory
+from ai_tools.llm.factory import create_llm_client
 from shared.security.fastapi import bearer_token_dependency
 from shared.security.jwt import VerifiedToken
 from shared.security.openapi import authorization_code_scheme
