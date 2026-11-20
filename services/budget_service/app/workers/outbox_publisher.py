@@ -7,11 +7,8 @@ import logging
 import os
 from datetime import datetime, timezone
 
-from sqlalchemy import select, update
-
 from app.db.session import SessionLocal
-from app.models import OutboxEvent
-from app.models.outbox_event import OUTBOX_PENDING, OUTBOX_PUBLISHED
+from app.repositories import outbox as repository
 from shared.messaging.publisher import publish_event
 
 logger = logging.getLogger(__name__)
@@ -31,13 +28,7 @@ class OutboxPublisher:
     def publish_pending_once(self) -> bool:
         """Publish the oldest available event, retaining the row lock until commit."""
         with self.session_factory() as db:
-            event = db.scalar(
-                select(OutboxEvent)
-                .where(OutboxEvent.status == OUTBOX_PENDING)
-                .order_by(OutboxEvent.created_at, OutboxEvent.id)
-                .limit(1)
-                .with_for_update(skip_locked=True)
-            )
+            event = repository.lock_next_pending(db)
             if event is None:
                 db.rollback()
                 return False
@@ -45,10 +36,7 @@ class OutboxPublisher:
             event_type = event.event_type
             try:
                 publish_event(event.payload)
-                event.status = OUTBOX_PUBLISHED
-                event.published_at = datetime.now(timezone.utc)
-                event.publish_attempts += 1
-                event.last_error = None
+                repository.mark_published(event, datetime.now(timezone.utc))
                 db.commit()
             except Exception as error:
                 db.rollback()
@@ -66,17 +54,7 @@ class OutboxPublisher:
         """Store diagnostics in a separate transaction; the row stays PENDING."""
         try:
             with self.session_factory() as db:
-                db.execute(
-                    update(OutboxEvent)
-                    .where(
-                        OutboxEvent.id == event_id,
-                        OutboxEvent.status == OUTBOX_PENDING,
-                    )
-                    .values(
-                        publish_attempts=OutboxEvent.publish_attempts + 1,
-                        last_error=f"{type(error).__name__}: {error}"[:MAX_ERROR_LENGTH],
-                    )
-                )
+                repository.record_failure(db, event_id, f"{type(error).__name__}: {error}"[:MAX_ERROR_LENGTH])
                 db.commit()
         except Exception:
             logger.exception("Could not record publish failure for outbox event %s.", event_id)
