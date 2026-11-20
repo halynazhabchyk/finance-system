@@ -1,0 +1,9 @@
+# Never send secrets, tests or local caches into image layers.
+**/.env
+**/tests
+**/__pycache__
+**/.pytest_cache
+**/*.pyc
+.venv
+.git
+docs

@@ -26,3 +26,6 @@ description.md
 
 # Lab documentation (kept locally)
 docs/
+
+# Build metadata of the editable install (pip install -e .)
+*.egg-info/

@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Library of the AI components (ai-assistant, mcp-server, A2A agents): LLM client,
+# tools, guardrails, A2A. Depends on the "shared" package; business services do not use it.
+[project]
+name = "finance-ai-tools"
+version = "0.1.0"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+include = ["ai_tools*"]
