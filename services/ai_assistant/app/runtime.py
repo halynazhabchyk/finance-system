@@ -11,11 +11,14 @@ from shared.log import configure_logging
 
 from app.api.exception_handlers import register_exception_handlers
 from app.api.routers import chat, system
-from shared.service_discovery.consul import ServiceConfig, service_registration
+from shared.service_discovery.consul import ServiceConfig, api_route_tags, service_registration
 from shared.web.openapi import install_public_openapi
 from shared.security.cors import install_cors
 from shared.security.openapi import swagger_ui_oauth_config
 from app.api.dependencies import SERVICE_SCOPES
+
+
+GATEWAY_TAGS = api_route_tags("ai-assistant", "/api/assistant", "/internal/assistant")
 
 SERVICE_NAME = "ai-assistant"
 SERVICE_PORT = 8020
@@ -23,7 +26,7 @@ SERVICE_PORT = 8020
 
 def create_app() -> FastAPI:
     configure_logging()
-    service_config = ServiceConfig.from_env(SERVICE_NAME, SERVICE_PORT)
+    service_config = ServiceConfig.from_env(SERVICE_NAME, SERVICE_PORT, GATEWAY_TAGS)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):

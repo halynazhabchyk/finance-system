@@ -17,13 +17,16 @@ from shared.web.openapi import install_public_openapi
 from shared.security.cors import install_cors
 from shared.security.openapi import swagger_ui_oauth_config
 from app.api.dependencies import SERVICE_SCOPES
-from shared.service_discovery.consul import ServiceConfig, service_registration
+from shared.service_discovery.consul import ServiceConfig, api_route_tags, service_registration
+
+
+GATEWAY_TAGS = api_route_tags("report-service", "/api/reports", "/internal/reports")
 
 
 def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
-    service_config = ServiceConfig.from_env("report-service", 8003)
+    service_config = ServiceConfig.from_env("report-service", 8003, GATEWAY_TAGS)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):

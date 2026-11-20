@@ -7,6 +7,7 @@ import os
 import random
 import socket
 from contextlib import contextmanager
+from collections.abc import Sequence
 from dataclasses import dataclass
 from urllib.error import URLError
 from urllib.parse import quote
@@ -43,7 +44,8 @@ class ServiceConfig:
     tags: tuple[str, ...]
 
     @classmethod
-    def from_env(cls, default_name: str, default_port: int) -> ServiceConfig:
+    def from_env(cls, default_name: str, default_port: int, route_tags: Sequence[str] = ()) -> ServiceConfig:
+        """``route_tags``: Traefik routes declared by the service; CONSUL_TAGS overrides them."""
         name = os.getenv("SERVICE_NAME", default_name)
         configured_id = os.getenv("SERVICE_ID")
         prefix = os.getenv("SERVICE_ID_PREFIX", name)
@@ -53,7 +55,7 @@ class ServiceConfig:
             tag.strip()
             for tag in os.getenv(
                 "CONSUL_TAGS",
-                ";".join(default_traefik_tags(name)),
+                ";".join(route_tags),
             ).split(";")
             if tag.strip()
         )
@@ -216,15 +218,8 @@ def discover_service(
     return ConsulClient(config).discover(service_name)
 
 
-# Routes of the MCP server (path kept) and A2A agents (prefix stripped).
-AI_COMPONENT_ROUTES: dict[str, tuple[str, bool]] = {
-    "mcp-server": ("/mcp", False),
-    "budget-agent": ("/agents/budget", True),
-    "report-agent": ("/agents/report", True),
-}
-
-
-def _ai_component_tags(service_name: str, public_prefix: str, strip_prefix: bool) -> list[str]:
+def gateway_route_tags(service_name: str, public_prefix: str, *, strip_prefix: bool) -> list[str]:
+    """Traefik route for a component served under ``public_prefix`` (MCP keeps the path, agents strip it)."""
     tags = [
         "traefik.enable=true",
         f"traefik.http.routers.{service_name}.rule=PathPrefix(`{public_prefix}`)",
@@ -241,66 +236,35 @@ def _ai_component_tags(service_name: str, public_prefix: str, strip_prefix: bool
     return tags
 
 
-# Only the user's own profile is public; list, /block and /activate stay internal.
-PUBLIC_ROUTE_RULES: dict[str, str] = {
-    "user-service": "PathRegexp(`^/api/users/[0-9a-fA-F-]{36}(/name)?$`)",
-}
-
-
-def default_traefik_tags(service_name: str) -> list[str]:
-    """Return Catalog Provider tags for the public API route of a service."""
-    routes = {
-        "user-service": (
-            "/api/users",
-            "/internal/users",
-        ),
-        "budget-service": (
-            "/api/budgets",
-            "/internal/budgets",
-        ),
-        "report-service": (
-            "/api/reports",
-            "/internal/reports",
-        ),
-        "ai-assistant": (
-            "/api/assistant",
-            "/internal/assistant",
-        ),
-    }
-    if service_name in AI_COMPONENT_ROUTES:
-        return _ai_component_tags(service_name, *AI_COMPONENT_ROUTES[service_name])
-    route = routes.get(service_name)
-    if route is None:
-        return []
-
-    public_prefix, internal_prefix = route
-    router = service_name
+def api_route_tags(
+    service_name: str,
+    public_prefix: str,
+    internal_prefix: str,
+    *,
+    rule: str | None = None,
+) -> list[str]:
+    """Traefik routes /api/X -> /internal/X plus public Swagger UI and OpenAPI; ``rule`` narrows the API route."""
     strip_middleware = f"{service_name}-strip"
     add_middleware = f"{service_name}-internal"
-    rule = PUBLIC_ROUTE_RULES.get(service_name, f"PathPrefix(`{public_prefix}`)")
     tags = [
         "traefik.enable=true",
-        f"traefik.http.routers.{router}.rule={rule}",
-        f"traefik.http.routers.{router}.entrypoints=web",
-        f"traefik.http.routers.{router}.service={service_name}",
-        f"traefik.http.routers.{router}.middlewares={strip_middleware},{add_middleware}",
+        f"traefik.http.routers.{service_name}.rule={rule or f'PathPrefix(`{public_prefix}`)'}",
+        f"traefik.http.routers.{service_name}.entrypoints=web",
+        f"traefik.http.routers.{service_name}.service={service_name}",
+        f"traefik.http.routers.{service_name}.middlewares={strip_middleware},{add_middleware}",
         f"traefik.http.middlewares.{strip_middleware}.stripprefix.prefixes={public_prefix}",
         f"traefik.http.middlewares.{add_middleware}.addprefix.prefix={internal_prefix}",
     ]
-    tags.extend(
-        [
-            f"traefik.http.routers.{service_name}-docs.rule=PathPrefix(`{public_prefix}/docs`)",
-            f"traefik.http.routers.{service_name}-docs.priority=200",
-            f"traefik.http.routers.{service_name}-docs.entrypoints=web",
-            f"traefik.http.routers.{service_name}-docs.service={service_name}",
-            f"traefik.http.routers.{service_name}-docs.middlewares={service_name}-docs-strip",
-            f"traefik.http.middlewares.{service_name}-docs-strip.stripprefix.prefixes={public_prefix}",
-            f"traefik.http.routers.{service_name}-openapi.rule=Path(`{public_prefix}/openapi.json`)",
-            f"traefik.http.routers.{service_name}-openapi.priority=200",
-            f"traefik.http.routers.{service_name}-openapi.entrypoints=web",
-            f"traefik.http.routers.{service_name}-openapi.service={service_name}",
-            f"traefik.http.routers.{service_name}-openapi.middlewares={service_name}-openapi-strip",
-            f"traefik.http.middlewares.{service_name}-openapi-strip.stripprefix.prefixes={public_prefix}",
-        ]
-    )
+    for suffix, path_rule in (("docs", f"PathPrefix(`{public_prefix}/docs`)"), ("openapi", f"Path(`{public_prefix}/openapi.json`)")):
+        router = f"{service_name}-{suffix}"
+        tags.extend(
+            [
+                f"traefik.http.routers.{router}.rule={path_rule}",
+                f"traefik.http.routers.{router}.priority=200",
+                f"traefik.http.routers.{router}.entrypoints=web",
+                f"traefik.http.routers.{router}.service={service_name}",
+                f"traefik.http.routers.{router}.middlewares={router}-strip",
+                f"traefik.http.middlewares.{router}-strip.stripprefix.prefixes={public_prefix}",
+            ]
+        )
     return tags

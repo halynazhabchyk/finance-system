@@ -17,17 +17,20 @@ from shared.web.openapi import install_public_openapi
 from shared.security.cors import install_cors
 from shared.security.openapi import swagger_ui_oauth_config
 from app.api.dependencies import SERVICE_SCOPES
-from shared.service_discovery.consul import ServiceConfig, service_registration
+from shared.service_discovery.consul import ServiceConfig, api_route_tags, service_registration
 from app.workers.outbox_publisher import OutboxPublisher
 from app.workers.saga_dlq_consumer import SagaDlqConsumer
 from app.workers.saga_reply_consumer import SagaReplyConsumer
 from app.workers.saga_timeout_watcher import SagaTimeoutWatcher
 
 
+GATEWAY_TAGS = api_route_tags("budget-service", "/api/budgets", "/internal/budgets")
+
+
 def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
-    service_config = ServiceConfig.from_env("budget-service", 8002)
+    service_config = ServiceConfig.from_env("budget-service", 8002, GATEWAY_TAGS)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
