@@ -10,7 +10,7 @@ from typing import Any
 import aio_pika
 from aio_pika import DeliveryMode, ExchangeType, Message
 
-from app.config import SchedulerConfig
+from app.core.config import SchedulerConfig
 
 logger = logging.getLogger(__name__)
 

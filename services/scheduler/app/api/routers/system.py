@@ -1,20 +1,10 @@
-"""FastAPI health endpoint and readiness state."""
+"""Health endpoint of the Scheduler."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from fastapi import APIRouter, HTTPException, status
 
-
-@dataclass
-class Readiness:
-    rabbitmq_available: bool = False
-    scheduler_running: bool = False
-
-    @property
-    def ready(self) -> bool:
-        return self.rabbitmq_available and self.scheduler_running
+from app.core.readiness import Readiness
 
 
 def create_router(readiness: Readiness) -> APIRouter:

@@ -9,8 +9,8 @@ from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from app.events import build_report_update_event
-from app.publisher import EventPublisher
+from app.integrations.events import build_report_update_event
+from app.integrations.publisher import EventPublisher
 
 logger = logging.getLogger(__name__)
 

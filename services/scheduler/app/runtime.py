@@ -10,10 +10,11 @@ from fastapi import FastAPI
 
 from shared.service_discovery.consul import ServiceConfig, service_registration
 
-from app.config import SchedulerConfig
-from app.health import Readiness, create_router
-from app.publisher import EventPublisher
-from app.scheduler import ReportScheduler
+from app.api.routers.system import create_router
+from app.core.config import SchedulerConfig
+from app.core.readiness import Readiness
+from app.integrations.publisher import EventPublisher
+from app.workers.report_scheduler import ReportScheduler
 
 logger = logging.getLogger(__name__)
 
