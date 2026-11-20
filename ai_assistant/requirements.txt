@@ -1,7 +1,6 @@
-fastapi
-uvicorn[standard]
-httpx
-PyJWT[crypto]
+fastapi==0.143.0
 google-genai==3.0.0
-pytest
+httpx==0.28.1
 nh3==0.3.7
+PyJWT[crypto]==2.15.1
+uvicorn[standard]==0.54.0

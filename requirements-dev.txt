@@ -1,0 +1,12 @@
+# Local development and tests (not installed into Docker images).
+# Install: pip install -r requirements-dev.txt
+-r user_service/requirements.txt
+-r budget_service/requirements.txt
+-r report_service/requirements.txt
+-r scheduler/requirements.txt
+-r ai_assistant/requirements.txt
+-r mcp_server/requirements.txt
+-r budget_agent/requirements.txt
+-r report_agent/requirements.txt
+pytest==9.2.0
+httpx==0.28.1

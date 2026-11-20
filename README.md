@@ -113,7 +113,16 @@ User, Budget і Report Service під час першої ініціалізац
 
 ## Тестування
 
-Для запуску наявних тестів використовуйте:
+Один раз створіть віртуальне середовище й встановіть залежності всіх сервісів
+разом із тестовими (pytest, httpx). У Docker-образи потрапляють лише
+`*/requirements.txt` без тестових пакетів.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
+Запуск тестів:
 
 ```powershell
 .\run_tests.ps1
