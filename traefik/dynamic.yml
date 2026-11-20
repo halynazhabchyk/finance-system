@@ -15,8 +15,6 @@ http:
       priority: 1000
       service: api@internal
 
-    # ЛР №5: Keycloak is not registered in Consul, so its route lives in the file provider.
-    # The path is not rewritten: Keycloak itself serves /auth (KC_HTTP_RELATIVE_PATH).
     keycloak:
       rule: "PathPrefix(`/auth`)"
       entryPoints:
@@ -35,10 +33,10 @@ http:
       replacePath:
         path: /docs
 
-    # ЛР №5, п. 6.3: security headers on every response of the "web" entrypoint
-    # (attached in docker-compose.yml). No accessControl* here: CORS stays in the services.
+    # Attached to the web entrypoint; CORS stays in the services.
     security-headers:
       headers:
         contentTypeNosniff: true
-        frameDeny: true
+        # SAMEORIGIN, not DENY: the Keycloak admin console embeds its own pages in iframes.
+        customFrameOptionsValue: "SAMEORIGIN"
         referrerPolicy: "no-referrer"

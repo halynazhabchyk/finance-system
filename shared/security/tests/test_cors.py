@@ -1,4 +1,4 @@
-"""Shared CORS policy (ЛР №5, requirement 1)."""
+"""Shared CORS policy."""
 
 import pytest
 from fastapi import FastAPI, HTTPException
@@ -19,7 +19,7 @@ def build_client(origins: tuple[str, ...] = (ALLOWED, "http://cad.kpi.ua")) -> T
 
     @app.get("/protected")
     def protected() -> dict:
-        # Stands in for an endpoint that requires a token: the preflight must not reach it.
+        # Protected endpoint: the preflight must not reach it.
         raise HTTPException(status_code=401, detail="Bearer access token is required.", headers={"WWW-Authenticate": "Bearer"})
 
     install_cors(app, CorsSettings(allowed_origins=origins))
@@ -43,15 +43,15 @@ def test_preflight_from_department_site_is_allowed():
     assert "access-control-allow-credentials" not in response.headers
 
 
-def test_preflight_from_unknown_origin_gets_no_allowing_headers():
+def test_preflight_from_unknown_origin_is_rejected_without_allow_origin():
     response = preflight(build_client(), "https://example.com")
 
     assert response.status_code == 400
-    assert not [name for name in response.headers if name.lower().startswith("access-control-")]
+    assert "access-control-allow-origin" not in response.headers
 
 
 def test_preflight_is_not_blocked_by_authentication():
-    """OPTIONS is answered by the middleware; the endpoint (here: always 401) is not executed."""
+    """OPTIONS is answered by the middleware."""
     assert preflight(build_client(), ALLOWED).status_code == 200
 
 

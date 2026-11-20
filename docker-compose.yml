@@ -1,3 +1,35 @@
+# Token verification and CORS shared by the services that check tokens.
+x-security-env: &security-env
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Set CORS_ALLOWED_ORIGINS in .env}
+  OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
+  OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+
+# Common environment of the AI components.
+x-ai-common: &ai-common
+  GATEWAY_URL: http://traefik
+  GATEWAY_TIMEOUT_SECONDS: ${GATEWAY_TIMEOUT_SECONDS:-10}
+  LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+  LLM_API_KEY: ${LLM_API_KEY:-}
+  LLM_MODEL: ${LLM_MODEL:-gemini-3.5-flash}
+  LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0}
+  LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-1024}
+  LLM_REQUEST_TIMEOUT_SECONDS: ${LLM_REQUEST_TIMEOUT_SECONDS:-30}
+  LLM_THINKING_LEVEL: ${LLM_THINKING_LEVEL:-}
+  AGENT_MAX_TOOL_ITERATIONS: ${AGENT_MAX_TOOL_ITERATIONS:-6}
+  AGENT_MAX_TOKENS_PER_REQUEST: ${AGENT_MAX_TOKENS_PER_REQUEST:-20000}
+  TOOL_RESULT_MAX_CHARS: ${TOOL_RESULT_MAX_CHARS:-4000}
+  USER_MESSAGE_MAX_CHARS: ${USER_MESSAGE_MAX_CHARS:-2000}
+  CONSUL_HOST: consul
+  CONSUL_PORT: 8500
+  CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
+  CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
+  CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
+  SERVICE_HEALTH_PATH: /internal/health
+  SERVICE_NAME: ai-assistant
+  SERVICE_ID_PREFIX: ${AI_ASSISTANT_ID_PREFIX:-ai-assistant}
+  SERVICE_PORT: 8020
+  PUBLIC_API_PREFIX: /api/assistant
+
 services:
   traefik:
     image: traefik:v3.2
@@ -86,8 +118,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # --- ЛР №5: authorization server. Its own PostgreSQL, not shared with the business services. ---
-
   keycloak-db:
     image: postgres:16
     container_name: finance-keycloak-db
@@ -108,24 +138,20 @@ services:
     image: quay.io/keycloak/keycloak:26.8.2
     container_name: finance-keycloak
     restart: unless-stopped
-    # Dev mode (HTTP, no build step); the realm is configuration as code, imported when absent.
     command: ["start-dev", "--import-realm"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
       KC_DB_USERNAME: ${KC_DB_USERNAME}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-      # Public address used by browsers and written to the "iss" claim; the path is served by Keycloak itself.
       KC_HTTP_RELATIVE_PATH: /auth
       KC_HOSTNAME: ${OIDC_PUBLIC_BASE_URL:-http://localhost:8080/auth}
-      # Services inside Docker call http://keycloak:8080/auth (JWKS) – backchannel URLs follow the request.
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?Set KC_BOOTSTRAP_ADMIN_USERNAME in .env}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?Set KC_BOOTSTRAP_ADMIN_PASSWORD in .env}
-      # Substituted into keycloak/realm-export.json (${GOOGLE_CLIENT_ID}); never stored in the file.
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     volumes:
@@ -136,7 +162,6 @@ services:
       keycloak-db:
         condition: service_healthy
     healthcheck:
-      # The image has no curl: a raw HTTP request to the management port through bash.
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
       interval: 10s
       timeout: 5s
@@ -163,9 +188,7 @@ services:
       CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
       CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
       PUBLIC_API_PREFIX: /api/users
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
-      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
-      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+      <<: *security-env
       OIDC_AUDIENCE: user-service
     expose:
       - "8001"
@@ -203,9 +226,7 @@ services:
       CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
       CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
       PUBLIC_API_PREFIX: /api/budgets
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
-      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
-      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+      <<: *security-env
       OIDC_AUDIENCE: budget-service
       USER_SERVICE_NAME: user-service
       USER_SERVICE_REQUEST_TIMEOUT: ${USER_SERVICE_REQUEST_TIMEOUT:-5}
@@ -260,9 +281,7 @@ services:
       RABBITMQ_RETRY_DELAY_SECONDS: ${RABBITMQ_RETRY_DELAY_SECONDS:-5}
       REPORT_SIMULATE_FAILURE: ${REPORT_SIMULATE_FAILURE:-false}
       PUBLIC_API_PREFIX: /api/reports
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
-      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
-      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+      <<: *security-env
       OIDC_AUDIENCE: report-service
     expose:
       - "8003"
@@ -323,40 +342,15 @@ services:
       timeout: 5s
       retries: 10
 
-  # --- ЛР №4: AI components. No databases, no RabbitMQ: only the REST API through Traefik. ---
+  # --- AI components (REST API through Traefik only) ---
 
   ai-assistant:
     build:
       context: .
       dockerfile: ai_assistant/Dockerfile
     restart: unless-stopped
-    environment: &ai-common
-      GATEWAY_URL: http://traefik
-      GATEWAY_TIMEOUT_SECONDS: ${GATEWAY_TIMEOUT_SECONDS:-10}
-      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
-      LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-gemini-3.5-flash}
-      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0}
-      LLM_MAX_OUTPUT_TOKENS: ${LLM_MAX_OUTPUT_TOKENS:-1024}
-      LLM_REQUEST_TIMEOUT_SECONDS: ${LLM_REQUEST_TIMEOUT_SECONDS:-30}
-      LLM_THINKING_LEVEL: ${LLM_THINKING_LEVEL:-}
-      AGENT_MAX_TOOL_ITERATIONS: ${AGENT_MAX_TOOL_ITERATIONS:-6}
-      AGENT_MAX_TOKENS_PER_REQUEST: ${AGENT_MAX_TOKENS_PER_REQUEST:-20000}
-      TOOL_RESULT_MAX_CHARS: ${TOOL_RESULT_MAX_CHARS:-4000}
-      USER_MESSAGE_MAX_CHARS: ${USER_MESSAGE_MAX_CHARS:-2000}
-      CONSUL_HOST: consul
-      CONSUL_PORT: 8500
-      CONSUL_HEALTH_INTERVAL: ${CONSUL_HEALTH_INTERVAL:-10s}
-      CONSUL_HEALTH_TIMEOUT: ${CONSUL_HEALTH_TIMEOUT:-3s}
-      CONSUL_DEREGISTER_AFTER: ${CONSUL_DEREGISTER_AFTER:-1m}
-      SERVICE_HEALTH_PATH: /internal/health
-      SERVICE_NAME: ai-assistant
-      SERVICE_ID_PREFIX: ${AI_ASSISTANT_ID_PREFIX:-ai-assistant}
-      SERVICE_PORT: 8020
-      PUBLIC_API_PREFIX: /api/assistant
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://cad.kpi.ua,http://cad.kpi.ua}
-      OIDC_ISSUER: ${OIDC_ISSUER:-http://localhost:8080/auth/realms/finance}
-      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://keycloak:8080/auth/realms/finance/protocol/openid-connect/certs}
+    environment:
+      <<: [*ai-common, *security-env]
       OIDC_AUDIENCE: ai-assistant
     expose:
       - "8020"

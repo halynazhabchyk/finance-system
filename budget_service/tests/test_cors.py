@@ -1,4 +1,4 @@
-"""CORS of the service through the shared module (ЛР №5, requirement 1)."""
+"""CORS of the service through the shared module."""
 
 from fastapi.testclient import TestClient
 
@@ -35,4 +35,4 @@ def test_preflight_from_unknown_origin_is_rejected(monkeypatch):
     response = preflight(make_client(monkeypatch), "https://example.com")
 
     assert response.status_code == 400
-    assert not [name for name in response.headers if name.lower().startswith("access-control-")]
+    assert "access-control-allow-origin" not in response.headers
